@@ -16,7 +16,7 @@ def get_video_frames(file_path):
         result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         data = json.loads(result.stdout)
 
-        print(f"\n🎞️ Frame Timeline for: {file_path}\n")
+        print(f"\n🎬 Frame Timeline for: {file_path}\n")
         print(f"{'Index':<6} {'Type':<6} {'PTS':<10} {'Key Frame':<10}")
         print("-" * 40)
 

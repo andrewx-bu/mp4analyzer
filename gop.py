@@ -1,43 +1,47 @@
-import subprocess
-import json
+import av
 import sys
 
+# Map PyAV's pict_type int to str
+# https://pyav.org/docs/develop/api/video.html
+PICT_TYPE_MAP = {
+    0: '?',  # Undefined
+    1: 'I',  # Intra
+    2: 'P',  # Predicted
+    3: 'B',  # Bi-directional predicted
+    4: 'S',  # S(GMC)-VOP MPEG-4
+    5: 'SI', # Switching intra
+    6: 'SP', # Switching predicted
+    7: 'BI', # BI type
+}
+
 def parse_gops(file_path):
-    cmd = [
-        "ffprobe",
-        "-v", "error",
-        "-select_streams", "v",
-        "-show_frames",
-        "-print_format", "json",
-        file_path
-    ]
-    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    data = json.loads(result.stdout)
+    try:
+        container = av.open(file_path)
 
-    gops = []
-    current_gop = []
+        gops = []
+        current_gop = []
 
-    for frame in data['frames']:
-        if frame.get("media_type") != "video":
-            continue
+        for frame in container.decode(video=0):
+            ftype = PICT_TYPE_MAP.get(frame.pict_type, '?')
 
-        ftype = frame.get("pict_type", "?")
+            if ftype == 'I':
+                if current_gop:
+                    gops.append(current_gop)
+                current_gop = ['I']
+            else:
+                current_gop.append(ftype)
 
-        if ftype == "I":
-            if current_gop:
-                gops.append(current_gop)
-            current_gop = ["I"]
-        else:
-            current_gop.append(ftype)
+        if current_gop:
+            gops.append(current_gop)
 
-    if current_gop:
-        gops.append(current_gop)
+        # Print summary
+        print(f"\n🎬 GOP Breakdown for: {file_path}")
+        print("-" * 40)
+        for i, gop in enumerate(gops):
+            print(f"GOP {i}: {len(gop)} frames ({' '.join(gop)})")
 
-    # Print summary
-    print(f"\n🎬 GOP Breakdown for: {file_path}")
-    print("-" * 40)
-    for i, gop in enumerate(gops):
-        print(f"GOP {i}: {len(gop)} frames ({' '.join(gop)})")
+    except Exception as e:
+        print(f"❌ Error: {e}")
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:

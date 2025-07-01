@@ -1,16 +1,63 @@
 import sys
 from PyQt6.QtWidgets import (
-    QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout,
-    QFrame, QScrollArea, QTextEdit, QSlider, QSplitter, QSizePolicy
+    QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout,
+    QFrame, QScrollArea, QTextEdit, QSlider, QSplitter, QFileDialog
 )
 from PyQt6.QtCore import Qt
+from typing import Optional
+from loadmp4.load import MP4Loader, VideoInfo
 
-class MP4AnalyzerApp(QWidget):
+class Mp4Analyzer(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.current_video: Optional[VideoInfo] = None
         self.setWindowTitle("MP4 Analyzer")
         self.setMinimumSize(1200, 800)
+
+        self.central_widget = QWidget()
+        self.setCentralWidget(self.central_widget)
+
         self.init_ui()
+        self.init_menu()
+
+    def init_menu(self):
+        menu_bar = self.menuBar()
+        file_menu = menu_bar.addMenu("&File")
+
+        open_action = file_menu.addAction("Open MP4...")
+        open_action.triggered.connect(self.open_file_dialog)
+
+    def open_file_dialog(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Open MP4 File",
+            "",
+            "MP4 Files (*.mp4 *.mov);;All Files (*)"
+        )
+        if file_path:
+            self.load_video(file_path)
+
+    def load_video(self, file_path: str):
+        self.current_video = MP4Loader.load_video(file_path)
+        if self.current_video:
+            self.update_ui_with_video_info()
+        else:
+            self.log_box.append(f"❌ Failed to load: {file_path}")
+
+    def update_ui_with_video_info(self):
+        if not self.current_video:
+            return
+
+        info = f"""=== Video Metadata ===
+            Path: {self.current_video.path}
+            Resolution: {self.current_video.width}x{self.current_video.height}
+            Codec: {self.current_video.codec}
+            FPS: {self.current_video.fps:.2f}
+            Duration: {self.current_video.duration:.2f}s
+            Frames: {self.current_video.frame_count}
+        """
+        self.metadata_box.setPlainText(info)
+        self.log_box.append(f"✅ Loaded: {self.current_video.path}")
 
     def init_ui(self):
         main_splitter = QSplitter(Qt.Orientation.Horizontal)
@@ -40,12 +87,9 @@ class MP4AnalyzerApp(QWidget):
         playback_layout.addWidget(self.playback_slider)
         playback_control.setLayout(playback_layout)
         left_splitter.addWidget(playback_control)
-        
-        # Initial stretch factors (5:2:2:1)
-        left_splitter.setStretchFactor(0, 5)
-        left_splitter.setStretchFactor(1, 2)
-        left_splitter.setSizes([400, 160, 160, 80])  # Initial pixel sizes
-        
+
+        left_splitter.setSizes([400, 160, 160, 80])
+
         # ==== RIGHT COL ====
         right_splitter = QSplitter(Qt.Orientation.Vertical)
         
@@ -69,13 +113,11 @@ class MP4AnalyzerApp(QWidget):
         main_splitter.addWidget(left_splitter)
         main_splitter.addWidget(right_splitter)
         main_splitter.setSizes([int(self.width() * 0.2), int(self.width() * 0.8)])
-        
-        # Allow left col to collapse
-        
+
         # Main layout
-        main_layout = QHBoxLayout(self)
-        main_layout.addWidget(main_splitter)
-        main_layout.setContentsMargins(0, 0, 0, 0)
+        layout = QHBoxLayout(self.central_widget)
+        layout.addWidget(main_splitter)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         # Style
         self.setStyleSheet("""
@@ -91,8 +133,10 @@ class MP4AnalyzerApp(QWidget):
             }
         """)
 
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = MP4AnalyzerApp()
+    app.setStyle('Fusion')
+    window = Mp4Analyzer()
     window.show()
     sys.exit(app.exec())

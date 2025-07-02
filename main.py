@@ -3,7 +3,8 @@ from typing import Optional
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout,
-    QFrame, QScrollArea, QTextEdit, QSlider, QSplitter, QFileDialog
+    QFrame, QScrollArea, QTextEdit, QSlider, QSplitter, QFileDialog, QSpacerItem,
+    QSizePolicy
 )
 from loadmp4.load import MP4Loader, VideoInfo
 
@@ -83,8 +84,57 @@ class MP4Analyzer(QMainWindow):
         # Box 4: Playback Control
         playback_control = QFrame()
         playback_layout = QVBoxLayout()
+
+        # Title
+        title_label = QLabel("Playback Control")
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title_label.setStyleSheet("font-weight: bold; border: none;")
+
+        # Top: Slider
         self.playback_slider = QSlider(Qt.Orientation.Horizontal)
+        playback_layout.addWidget(title_label)
         playback_layout.addWidget(self.playback_slider)
+
+        # Bottom: Frame counter and step buttons
+        bottom_row = QWidget()
+        bottom_layout = QHBoxLayout()
+        bottom_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Left container for frame counter
+        left_container = QWidget()
+        left_layout = QHBoxLayout()
+        left_layout.setContentsMargins(0, 0, 10, 0)
+        left_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+
+        self.frame_counter_label = QLabel("0 / 0")
+        self.frame_counter_label.setFixedSize(80, 25)
+        self.frame_counter_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        left_layout.addWidget(self.frame_counter_label)
+        left_container.setLayout(left_layout)
+
+        # Right container for < and > buttons
+        right_container = QWidget()
+        right_layout = QHBoxLayout()
+        right_layout.setContentsMargins(0, 0, 2, 0)
+        right_layout.setAlignment(Qt.AlignmentFlag.AlignRight)
+
+        self.prev_button = QLabel("<")
+        self.next_button = QLabel(">")
+        for btn in [self.prev_button, self.next_button]:
+            btn.setFixedSize(40, 25)
+            btn.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            btn.setStyleSheet("border: 1px solid #555; background: #333;")
+
+        right_layout.addWidget(self.prev_button)
+        right_layout.addWidget(self.next_button)
+        right_container.setLayout(right_layout)
+
+        bottom_layout.addWidget(left_container)
+        bottom_layout.addWidget(right_container)
+
+        bottom_row.setLayout(bottom_layout)
+        playback_layout.addWidget(bottom_row)
+
         playback_control.setLayout(playback_layout)
         left_splitter.addWidget(playback_control)
 
@@ -128,8 +178,8 @@ class MP4Analyzer(QMainWindow):
             }
             QSplitter::handle {
                 background: #444;
-                width: 4px;
-                height: 4px;
+                width: 2px;
+                height: 2px;
             }
         """)
 

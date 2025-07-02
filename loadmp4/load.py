@@ -1,6 +1,6 @@
 import av
-from dataclasses import dataclass
 from typing import Optional
+from dataclasses import dataclass
 
 @dataclass
 class VideoInfo:

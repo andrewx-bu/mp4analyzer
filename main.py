@@ -1,13 +1,13 @@
 import sys
+from typing import Optional
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout,
     QFrame, QScrollArea, QTextEdit, QSlider, QSplitter, QFileDialog
 )
-from PyQt6.QtCore import Qt
-from typing import Optional
 from loadmp4.load import MP4Loader, VideoInfo
 
-class Mp4Analyzer(QMainWindow):
+class MP4Analyzer(QMainWindow):
     def __init__(self):
         super().__init__()
         self.current_video: Optional[VideoInfo] = None
@@ -137,6 +137,6 @@ class Mp4Analyzer(QMainWindow):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setStyle('Fusion')
-    window = Mp4Analyzer()
+    window = MP4Analyzer()
     window.show()
     sys.exit(app.exec())

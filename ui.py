@@ -6,6 +6,7 @@ from PyQt6.QtWidgets import (
     QSplitter, QWidget, QSlider, QPushButton, QSpinBox, QSizePolicy
 )
 from canvas import VideoCanvas
+from timeline import TimelineBar
 
 # Reusable text box
 def create_text_box(title: str) -> QTextEdit:
@@ -69,7 +70,8 @@ def create_right_panel(
     open_clicked: Callable,
     snapshot_clicked: Callable,
     reset_clicked: Callable,
-    zoom_changed: Callable[[int], None]
+    zoom_changed: Callable[[int], None],
+    frame_selected: Callable[[int], None],
 ):
     right = QSplitter(Qt.Orientation.Vertical)
 
@@ -115,11 +117,10 @@ def create_right_panel(
             bar.setAlignment(item.widget(), Qt.AlignmentFlag.AlignVCenter)
     right.addWidget(ctrl)
 
-    # Timeline placeholder
-    timeline = QLabel("Timeline Bar")
-    timeline.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    # Timeline bar graph
+    timeline = TimelineBar(frame_selected)
     right.addWidget(timeline)
     right.setStretchFactor(0, 3)
     right.setStretchFactor(2, 1)
 
-    return canvas, video_lbl, zoom_spin, res_label, right
+    return canvas, video_lbl, zoom_spin, res_label, timeline, right

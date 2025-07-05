@@ -6,6 +6,19 @@ from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtWidgets import QApplication, QMainWindow, QSplitter, QFileDialog
 import ui
 from loader import MP4Loader, VideoInfo
+from timeline import FrameInfo
+
+# Map PyAV pict_type values to frame type letters
+PICT_TYPE_MAP = {
+    0: '?',
+    1: 'I',
+    2: 'P',
+    3: 'B',
+    4: 'S',
+    5: 'SI',
+    6: 'SP',
+    7: 'BI',
+}
 
 class MP4Analyzer(QMainWindow):
     def __init__(self):
@@ -15,6 +28,7 @@ class MP4Analyzer(QMainWindow):
 
         self.video_info: Optional[VideoInfo] = None
         self.frames: List[QImage] = []
+        self.frame_info: List[FrameInfo] = []
         self.current_idx: int = 0
         self.zoom: float = 1.0
 
@@ -38,8 +52,10 @@ class MP4Analyzer(QMainWindow):
 
         # Left and right panels
         self.left_panel = ui.create_left_panel(playback_widget)
-        self.canvas, self.video_lbl, self.zoom_spin, self.res_lbl, self.right_panel = ui.create_right_panel(
-            self._open_file, self._save_snapshot, self._reset_zoom, self._set_zoom)
+        (self.canvas, self.video_lbl, self.zoom_spin, self.res_lbl,
+         self.timeline, self.right_panel) = ui.create_right_panel(
+            self._open_file, self._save_snapshot, self._reset_zoom, self._set_zoom,
+            self._display_frame)
 
         # Add panels to splitter
         main_splitter.addWidget(self.left_panel)
@@ -75,17 +91,24 @@ class MP4Analyzer(QMainWindow):
 
         self._update_metadata()
 
-        # Decode all frames
+        # Decode all frames and gather info
         try:
             import av
             container = av.open(path)
             stream = next(s for s in container.streams if s.type == 'video')
-            self.frames = [
-                QImage(f.to_ndarray(format='rgb24').data,
-                       f.width, f.height, QImage.Format.Format_RGB888).copy()
-                for packet in container.demux(stream)
-                for f in packet.decode()
-            ]
+            self.frames = []
+            self.frame_info = []
+            for packet in container.demux(stream):
+                for f in packet.decode():
+                    img = QImage(
+                        f.to_ndarray(format='rgb24').data,
+                        f.width,
+                        f.height,
+                        QImage.Format.Format_RGB888,
+                    ).copy()
+                    self.frames.append(img)
+                    ftype = PICT_TYPE_MAP.get(getattr(f, 'pict_type', 0), '?')
+                    self.frame_info.append(FrameInfo(size=getattr(packet, 'size', 0), ftype=ftype))
         except Exception as e:
             self._log(f"❌ Error decoding: {e}")
             return
@@ -93,6 +116,8 @@ class MP4Analyzer(QMainWindow):
         total = len(self.frames)
         self.slider.setRange(0, max(0, total-1))
         self.slider.setValue(0)
+        if hasattr(self, 'timeline'):
+            self.timeline.set_frames(self.frame_info)
         self._display_frame(0)
         self._log(f"✅ Loaded: {path} ({total} frames)")
 
@@ -132,6 +157,9 @@ class MP4Analyzer(QMainWindow):
             self.slider.blockSignals(True)
             self.slider.setValue(idx)
             self.slider.blockSignals(False)
+
+        if hasattr(self, 'timeline'):
+            self.timeline.set_selected(idx)
 
         self.res_lbl.setText(f"{img.width()}x{img.height()}")
 

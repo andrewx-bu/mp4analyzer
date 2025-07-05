@@ -3,9 +3,9 @@ from typing import Callable
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QFrame, QTextEdit, QLabel, QVBoxLayout, QHBoxLayout,
-    QSplitter, QScrollArea, QWidget, QSlider, QPushButton,
-    QSizePolicy, QSpinBox
+    QSplitter, QWidget, QSlider, QPushButton, QSpinBox
 )
+from canvas import VideoCanvas
 
 # Reusable text box
 def create_text_box(title: str) -> QTextEdit:
@@ -73,14 +73,10 @@ def create_right_panel(
     right = QSplitter(Qt.Orientation.Vertical)
 
     # Video display
-    scroll = QScrollArea()
-    scroll.setAlignment(Qt.AlignmentFlag.AlignCenter)
-    scroll.setWidgetResizable(True)
-    video_lbl = QLabel("Frame Display Area")
+    canvas = VideoCanvas()
+    video_lbl = canvas.label
     video_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-    video_lbl.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-    scroll.setWidget(video_lbl)
-    right.addWidget(scroll)
+    right.addWidget(canvas)
 
     # Control bar
     ctrl = QWidget()
@@ -124,4 +120,4 @@ def create_right_panel(
     right.setStretchFactor(0, 3)
     right.setStretchFactor(2, 1)
 
-    return scroll, video_lbl, zoom_spin, res_label, right
+    return canvas, video_lbl, zoom_spin, res_label, right

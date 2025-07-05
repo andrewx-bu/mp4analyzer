@@ -1,7 +1,7 @@
 # Entry point for MP4 Analyzer application.
 import sys
 from typing import Optional, List
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QEvent
 from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtWidgets import QApplication, QMainWindow, QSplitter, QFileDialog
 import ui
@@ -21,6 +21,8 @@ class MP4Analyzer(QMainWindow):
         # Build UI
         self._init_ui()
         self._init_menu()
+        self.canvas.installEventFilter(self)
+        self.video_lbl.installEventFilter(self)
 
     def _init_menu(self):
         file_menu = self.menuBar().addMenu("&File")
@@ -36,7 +38,7 @@ class MP4Analyzer(QMainWindow):
 
         # Left and right panels
         self.left_panel = ui.create_left_panel(playback_widget)
-        self.scroll_area, self.video_lbl, self.zoom_spin, self.res_lbl, self.right_panel = ui.create_right_panel(
+        self.canvas, self.video_lbl, self.zoom_spin, self.res_lbl, self.right_panel = ui.create_right_panel(
             self._open_file, self._save_snapshot, self._reset_zoom, self._set_zoom)
 
         # Add panels to splitter
@@ -117,13 +119,12 @@ class MP4Analyzer(QMainWindow):
         # Zoom
         w = int(img.width() * self.zoom)
         h = int(img.height() * self.zoom)
-        self.video_lbl.setPixmap(
-            pix.scaled(
-                w, h,
-                Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.TransformationMode.SmoothTransformation
-            )
+        scaled = pix.scaled(
+            w, h,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
         )
+        self.canvas.set_pixmap(scaled)
 
         self.current_idx = idx
         self.counter_lbl.setText(f"{idx+1} / {len(self.frames)}")
@@ -154,6 +155,15 @@ class MP4Analyzer(QMainWindow):
 
     def _log(self, message: str):
         self.left_panel.widget(2).append(message)
+
+    def eventFilter(self, source, event):
+        if source in (self.canvas, self.video_lbl) and event.type() == QEvent.Type.Wheel:
+            step = 2 if event.angleDelta().y() > 0 else -2
+            self.zoom_spin.setValue(
+                max(self.zoom_spin.minimum(), min(self.zoom_spin.maximum(), self.zoom_spin.value() + step))
+            )
+            return True
+        return super().eventFilter(source, event)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

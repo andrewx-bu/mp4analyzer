@@ -4,12 +4,11 @@ from PyQt6.QtGui import QPixmap
 
 class VideoCanvas(QFrame):
     # A fixed-size canvas that holds a draggable QLabel.
-    def __init__(self, width: int = 960, height: int = 540):
+    def __init__(self):
         super().__init__()
-        self.setFixedSize(width, height)
-        self.setStyleSheet("background: black;")
+        self.setStyleSheet("background: #222;")
         self.label = QLabel(self)
-        self.label.setCursor(Qt.CursorShape.OpenHandCursor)
+        self.label.setStyleSheet("border: none")
         self._drag_offset: QPoint | None = None
 
     def set_pixmap(self, pix: QPixmap):

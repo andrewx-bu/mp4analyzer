@@ -3,7 +3,7 @@ from typing import Callable
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QFrame, QTextEdit, QLabel, QVBoxLayout, QHBoxLayout,
-    QSplitter, QWidget, QSlider, QPushButton, QSpinBox
+    QSplitter, QWidget, QSlider, QPushButton, QSpinBox, QSizePolicy
 )
 from canvas import VideoCanvas
 
@@ -19,6 +19,7 @@ def create_playback_control(
     slider_changed: Callable[[int], None]
 ) -> QWidget:
     frame = QFrame()
+    frame.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
     vbox = QVBoxLayout(frame)
     title_lbl = QLabel("Playback Control")
     title_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -80,6 +81,7 @@ def create_right_panel(
 
     # Control bar
     ctrl = QWidget()
+    ctrl.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
     bar = QHBoxLayout(ctrl)
     bar.setContentsMargins(5, 5, 5, 5)
     open_btn = QPushButton("Open")

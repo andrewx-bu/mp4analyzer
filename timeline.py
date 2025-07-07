@@ -93,8 +93,7 @@ class TimelineBar(QWidget):
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton and self._frames:
             idx = self._index_at_pos(event.position().x())
-            self._selected = idx
-            self.update()
+            self.set_selected(idx)
             if self._callback:
                 self._callback(idx)
             event.accept()
@@ -115,7 +114,6 @@ class TimelineBar(QWidget):
             self._center_on_selected()
         event.accept()
 
-
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.fillRect(self.rect(), QColor(34, 34, 34))
@@ -130,7 +128,8 @@ class TimelineBar(QWidget):
             x = int(i * (bar_w + pad))
             y = usable_h - h
             color = self.COLOR_MAP.get(info.ftype, QColor('gray'))
-            if i == self._hover:
+            highlight = i == self._hover
+            if highlight:
                 color = color.lighter(150)
             painter.fillRect(QRect(x, y, bar_w, h), color)
             painter.save()
@@ -142,11 +141,17 @@ class TimelineBar(QWidget):
             painter.rotate(90)
             painter.drawText(0, 0, f"#{i}")
             painter.restore()
+            if highlight:
+                painter.fillRect(QRect(x, 0, bar_w, self.height()), QColor(255, 255, 255, 40))
         # Draw selected marker
         if 0 <= self._selected < len(self._frames):
             x_sel = int(self._selected * (bar_w + pad) + bar_w / 2)
-            pen = QPen(QColor('yellow'))
-            pen.setWidth(2)
+            color = QColor('yellow')
+            rect_w = 8
+            rect_h = 14
+            painter.fillRect(QRect(x_sel - rect_w // 2, 0, rect_w, rect_h), color)
+            pen = QPen(color)
+            pen.setWidth(3)
             painter.setPen(pen)
-            painter.drawLine(x_sel, 0, x_sel, usable_h)
+            painter.drawLine(x_sel, rect_h, x_sel, usable_h)
         painter.end()

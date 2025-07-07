@@ -1,8 +1,8 @@
 # Video loading and decoding utilities.
 import av
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 from PyQt6.QtGui import QImage
-from models import VideoMetadata, FrameData, VideoFrameCollection
+from models import VideoMetadata, FrameData, LazyVideoFrameCollection
 
 
 class VideoLoaderError(Exception):
@@ -68,49 +68,56 @@ class VideoMetadataExtractor:
 
 
 class VideoFrameDecoder:
-    """Decodes video frames from files."""
+    """Utilities for decoding video frames and metadata."""
     
     def __init__(self):
         self._extractor = VideoMetadataExtractor()
     
-    def decode_all_frames(self, file_path: str) -> Tuple[Optional[VideoMetadata], VideoFrameCollection]:
-        """
-        Decode all frames from a video file.
-        
-        Args:
-            file_path: Path to the video file
-            
-        Returns:
-            Tuple of (metadata, frame_collection). Metadata is None if extraction fails.
-            
-        Raises:
-            VideoLoaderError: If decoding fails
-        """
+    def parse_frames(self, file_path: str) -> Tuple[Optional[VideoMetadata], List[FrameData], List[int]]:
+        """Parse frame metadata for all frames without decoding to images."""
         metadata = self._extractor.extract_metadata(file_path)
-        frame_collection = VideoFrameCollection()
-        
+
+        frame_data: List[FrameData] = []
+        frame_pts: List[int] = []
+
         if not metadata:
-            return None, frame_collection
-        
+            return None, frame_data, frame_pts
+
         try:
-            self._decode_frames_from_file(file_path, frame_collection)
+            with av.open(file_path) as container:
+                video_stream = VideoMetadataExtractor._find_video_stream(container)
+                if not video_stream:
+                    raise VideoLoaderError("No video stream found")
+
+                for packet in container.demux(video_stream):
+                    for frame in packet.decode():
+                        frame_pts.append(int(frame.pts or 0))
+                        frame_data.append(self._extract_frame_metadata(frame, packet))
         except Exception as e:
-            raise VideoLoaderError(f"Failed to decode frames from {file_path}: {str(e)}")
+            raise VideoLoaderError(f"Failed to parse frames from {file_path}: {str(e)}")
         
-        return metadata, frame_collection
+        return metadata, frame_data, frame_pts
     
-    def _decode_frames_from_file(self, file_path: str, frame_collection: VideoFrameCollection):
-        """Decode all frames and add them to the collection."""
-        with av.open(file_path) as container:
-            video_stream = VideoMetadataExtractor._find_video_stream(container)
-            if not video_stream:
-                raise VideoLoaderError("No video stream found")
-            
-            for packet in container.demux(video_stream):
-                for frame in packet.decode():
-                    qimage = self._convert_frame_to_qimage(frame)
-                    frame_metadata = self._extract_frame_metadata(frame, packet)
-                    frame_collection.add_frame(qimage, frame_metadata)
+    def decode_frame_image(self, file_path: str, pts: int) -> Optional[QImage]:
+        """Decode a single frame at the given pts."""
+        try:
+            with av.open(file_path) as container:
+                stream = VideoMetadataExtractor._find_video_stream(container)
+                if not stream:
+                    raise VideoLoaderError("No video stream found")
+
+                container.seek(int(pts), stream=stream, any_frame=False)
+                for packet in container.demux(stream):
+                    for frame in packet.decode():
+                        if frame.pts is None:
+                            continue
+                        if frame.pts < pts:
+                            continue
+                        return self._convert_frame_to_qimage(frame)
+        except Exception:
+            return None
+
+        return None
     
     def _convert_frame_to_qimage(self, av_frame) -> QImage:
         """Convert PyAV frame to QImage."""
@@ -148,14 +155,10 @@ class VideoLoader:
     def __init__(self):
         self._decoder = VideoFrameDecoder()
     
-    def load_video_file(self, file_path: str) -> Tuple[Optional[VideoMetadata], VideoFrameCollection]:
-        """
-        Load a video file and decode all frames.
-        
-        Args:
-            file_path: Path to the video file
-            
-        Returns:
-            Tuple of (metadata, frame_collection)
-        """
-        return self._decoder.decode_all_frames(file_path)
+    def load_video_file(self, file_path: str) -> Tuple[Optional[VideoMetadata], LazyVideoFrameCollection]:
+        """Load a video file using lazy frame decoding."""
+        metadata, frame_meta, frame_pts = self._decoder.parse_frames(file_path)
+
+        collection = LazyVideoFrameCollection(file_path, frame_pts, frame_meta)
+
+        return metadata, collection

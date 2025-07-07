@@ -1,6 +1,9 @@
 # Data models for MP4 Analyzer application.
+import av
+import threading
 from dataclasses import dataclass
-from typing import Optional, List
+from collections import OrderedDict
+from typing import Optional, List, Dict
 from PyQt6.QtGui import QImage
 
 
@@ -38,52 +41,108 @@ class FrameData:
         return self.frame_type == 'I'
 
 
-class VideoFrameCollection:
-    """Container for managing decoded video frames and their metadata."""
-    
-    def __init__(self):
-        self._frames: List[QImage] = []
-        self._frame_metadata: List[FrameData] = []
-    
-    def add_frame(self, image: QImage, metadata: FrameData):
-        """Add a decoded frame with its metadata."""
-        self._frames.append(image)
-        self._frame_metadata.append(metadata)
-    
-    def clear(self):
-        """Clear all frames and metadata."""
-        self._frames.clear()
-        self._frame_metadata.clear()
-    
+class LazyVideoFrameCollection:
+    """Lazily decodes video frames and caches them."""
+
+    def __init__(self, file_path: str, frame_pts: List[int],
+                 frame_metadata: List[FrameData], cache_size: int = 120):
+        self._file_path = file_path
+        self._frame_pts = frame_pts
+        self._frame_metadata = frame_metadata
+
+        self._cache: "OrderedDict[int, QImage]" = OrderedDict()
+        self._cache_size = cache_size
+        self._lock = threading.Lock()
+
+    # Basic collection helpers
     @property
     def count(self) -> int:
-        """Get total number of frames."""
-        return len(self._frames)
-    
+        return len(self._frame_pts)
+
     @property
     def is_empty(self) -> bool:
-        """Check if collection is empty."""
-        return len(self._frames) == 0
-    
-    def get_frame(self, index: int) -> Optional[QImage]:
-        """Get frame at specific index."""
-        if 0 <= index < len(self._frames):
-            return self._frames[index]
-        return None
-    
-    def get_frame_metadata(self, index: int) -> Optional[FrameData]:
-        """Get frame metadata at specific index."""
-        if 0 <= index < len(self._frame_metadata):
-            return self._frame_metadata[index]
-        return None
-    
-    @property
-    def frame_metadata_list(self) -> List[FrameData]:
-        """Get list of all frame metadata."""
-        return self._frame_metadata.copy()
-    
+        return len(self._frame_pts) == 0
+
     def get_valid_index(self, requested_index: int) -> int:
-        """Clamp index to valid range."""
         if self.is_empty:
             return 0
         return max(0, min(requested_index, self.count - 1))
+
+    @property
+    def frame_metadata_list(self) -> List[FrameData]:
+        return self._frame_metadata.copy()
+
+    def get_frame_metadata(self, index: int) -> Optional[FrameData]:
+        if 0 <= index < len(self._frame_metadata):
+            return self._frame_metadata[index]
+        return None
+
+    # Frame retrieval
+    def get_frame(self, index: int) -> Optional[QImage]:
+        """Retrieve a frame, decoding on demand."""
+        with self._lock:
+            if index in self._cache:
+                img = self._cache.pop(index)
+                self._cache[index] = img
+                return img
+
+        img = self._decode_frame(index)
+        return img
+
+    def clear(self):
+        with self._lock:
+            self._cache.clear()
+
+    # Internal helpers
+    def _convert_frame_to_qimage(self, av_frame) -> QImage:
+        rgb_array = av_frame.to_ndarray(format="rgb24")
+        qimage = QImage(
+            rgb_array.data,
+            av_frame.width,
+            av_frame.height,
+            QImage.Format.Format_RGB888,
+        )
+        return qimage.copy()
+
+    def _decode_frame(self, index: int) -> Optional[QImage]:
+        if not (0 <= index < self.count):
+            return None
+
+        pts = self._frame_pts[index]
+        try:
+            with av.open(self._file_path) as container:
+                stream = next(s for s in container.streams if s.type == "video")
+                container.seek(int(pts), stream=stream, any_frame=False)
+
+                current_index = self._find_gop_start(index)
+                while current_index < index and current_index in self._cache:
+                    current_index += 1
+                for packet in container.demux(stream):
+                    for frame in packet.decode():
+                        if frame.pts is None:
+                            continue
+                        if frame.pts < self._frame_pts[current_index]:
+                            continue
+
+                        image = self._convert_frame_to_qimage(frame)
+                        with self._lock:
+                            self._cache[current_index] = image
+                            while len(self._cache) > self._cache_size:
+                                self._cache.popitem(last=False)
+
+                        if current_index == index:
+                            return image
+
+                        current_index += 1
+                        if current_index >= self.count:
+                            return None
+        except Exception:
+            return None
+
+        return None
+
+    def _find_gop_start(self, index: int) -> int:
+        for i in range(index, -1, -1):
+            if self._frame_metadata[i].is_keyframe:
+                return i
+        return 0

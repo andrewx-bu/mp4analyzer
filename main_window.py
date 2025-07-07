@@ -3,7 +3,7 @@ from typing import Optional
 from PyQt6.QtCore import Qt, QEvent
 from PyQt6.QtGui import QPixmap, QAction
 from PyQt6.QtWidgets import QMainWindow, QFileDialog, QMessageBox
-from models import VideoMetadata, VideoFrameCollection
+from models import VideoMetadata, LazyVideoFrameCollection
 from video_loader import VideoLoader, VideoLoaderError
 from ui_components import create_main_layout, PlaybackControlWidget, LeftPanelWidget, RightPanelWidget
 
@@ -18,7 +18,7 @@ class MP4AnalyzerMainWindow(QMainWindow):
         
         # Application state
         self._video_metadata: Optional[VideoMetadata] = None
-        self._frame_collection = VideoFrameCollection()
+        self._frame_collection = LazyVideoFrameCollection("", [], [])
         self._current_frame_index = 0
         self._zoom_factor = 1.0
         

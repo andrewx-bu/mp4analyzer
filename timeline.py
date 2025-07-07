@@ -16,6 +16,8 @@ class TimelineBar(QWidget):
         'P': QColor('blue'),
         'B': QColor('green'),
     }
+    BAR_WIDTH = 25  # width of each bar in pixels
+    LABEL_SPACE = 30  # space at bottom for rotated labels
 
     def __init__(self, frame_selected: Callable[[int], None]):
         super().__init__()
@@ -24,12 +26,14 @@ class TimelineBar(QWidget):
         self._hover: int = -1
         self._callback = frame_selected
         self.setMouseTracking(True)
-        self.setMinimumHeight(80)
+        self.setMinimumHeight(self.LABEL_SPACE + 80)
 
     def set_frames(self, frames: List[FrameInfo]):
         self._frames = frames
         self._selected = 0 if frames else -1
         self._hover = -1
+        self.setMinimumWidth(len(frames) * self.BAR_WIDTH)
+        self.resize(self.minimumWidth(), self.height())
         self.update()
 
     def set_selected(self, idx: int):
@@ -40,7 +44,7 @@ class TimelineBar(QWidget):
     def _index_at_pos(self, x: float) -> int:
         if not self._frames:
             return -1
-        bar_w = self.width() / len(self._frames)
+        bar_w = self.BAR_WIDTH
         idx = int(x // bar_w)
         idx = max(0, min(len(self._frames) - 1, idx))
         return idx
@@ -74,21 +78,28 @@ class TimelineBar(QWidget):
         painter.fillRect(self.rect(), QColor(34, 34, 34))
         if not self._frames:
             return
-        bar_w = max(1, self.width() / len(self._frames))
+        bar_w = self.BAR_WIDTH
         max_size = max(f.size for f in self._frames) or 1
+        usable_h = self.height() - self.LABEL_SPACE
         for i, info in enumerate(self._frames):
-            h = int(info.size / max_size * (self.height() - 10))
+            h = int(info.size / max_size * (usable_h - 10))
             x = int(i * bar_w)
-            y = self.height() - h
+            y = usable_h - h
             color = self.COLOR_MAP.get(info.ftype, QColor('gray'))
             if i == self._hover:
                 color = color.lighter(150)
-            painter.fillRect(QRect(x, y, int(bar_w), h), color)
+            painter.fillRect(QRect(x, y, bar_w, h), color)
+            # Draw label rotated vertically below bar
+            painter.save()
+            painter.translate(x + bar_w / 2, usable_h + 2)
+            painter.rotate(90)
+            painter.drawText(0, 0, f"#{i}")
+            painter.restore()
         # Draw selected marker
         if 0 <= self._selected < len(self._frames):
             x = int(self._selected * bar_w + bar_w / 2)
             pen = QPen(QColor('yellow'))
             pen.setWidth(2)
             painter.setPen(pen)
-            painter.drawLine(x, 0, x, self.height())
+            painter.drawLine(x, 0, x, usable_h)
         painter.end()

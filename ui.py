@@ -3,7 +3,8 @@ from typing import Callable
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QFrame, QTextEdit, QLabel, QVBoxLayout, QHBoxLayout,
-    QSplitter, QWidget, QSlider, QPushButton, QSpinBox, QSizePolicy
+    QSplitter, QWidget, QSlider, QPushButton, QSpinBox, QSizePolicy,
+    QScrollArea
 )
 from canvas import VideoCanvas
 from timeline import TimelineBar
@@ -119,7 +120,13 @@ def create_right_panel(
 
     # Timeline bar graph
     timeline = TimelineBar(frame_selected)
-    right.addWidget(timeline)
+    scroll = QScrollArea()
+    scroll.setWidget(timeline)
+    scroll.setWidgetResizable(False)
+    scroll.setMinimumHeight(120)
+    scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+    scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+    right.addWidget(scroll)
     right.setStretchFactor(0, 3)
     right.setStretchFactor(2, 1)
 

@@ -18,7 +18,7 @@ class TimelineBar(QWidget):
     }
     BAR_WIDTH = 25    # width of each bar in pixels
     PADDING = 1       # space between bars in pixels
-    LABEL_SPACE = 35  # space at bottom for rotated labels
+    LABEL_SPACE = 40  # space at bottom for rotated labels
 
     def __init__(self, frame_selected: Callable[[int], None]):
         super().__init__()

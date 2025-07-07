@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Callable, List
 from PyQt6.QtCore import Qt, QRect
 from PyQt6.QtGui import QColor, QPainter, QPen
-from PyQt6.QtWidgets import QWidget
+from PyQt6.QtWidgets import QWidget, QScrollArea
 
 @dataclass
 class FrameInfo:
@@ -12,9 +12,14 @@ class FrameInfo:
 class TimelineBar(QWidget):
     """Widget showing frame sizes as a bar graph."""
     COLOR_MAP = {
+        '?': QColor('gray'),
         'I': QColor('red'),
         'P': QColor('blue'),
         'B': QColor('green'),
+        'S': QColor('gray'),
+        'SI': QColor('gray'),
+        'SP': QColor('gray'),
+        'BI': QColor('gray'),
     }
     BAR_WIDTH = 25    # width of each bar in pixels
     PADDING = 1       # space between bars in pixels
@@ -26,8 +31,13 @@ class TimelineBar(QWidget):
         self._selected: int = -1
         self._hover: int = -1
         self._callback = frame_selected
+        self._scroll: QScrollArea | None = None
         self.setMouseTracking(True)
         self.setMinimumHeight(self.LABEL_SPACE + 80)
+
+    def set_scroll_area(self, area: QScrollArea):
+        """Assign the scroll area that contains this widget."""
+        self._scroll = area
 
     def set_frames(self, frames: List[FrameInfo]):
         self._frames = frames
@@ -38,11 +48,27 @@ class TimelineBar(QWidget):
         self.setMinimumWidth(total_width)
         self.resize(total_width, self.height())
         self.update()
+        if self._scroll:
+            self._center_on_selected()
 
     def set_selected(self, idx: int):
         if idx != self._selected:
             self._selected = idx
             self.update()
+            if self._scroll:
+                self._center_on_selected()
+    
+    def _center_on_selected(self):
+        if not self._scroll or not self._frames or self.width() == 0:
+            return
+        bar_w = self.BAR_WIDTH
+        pad = self.PADDING
+        x_sel = int(self._selected * (bar_w + pad) + bar_w / 2)
+        viewport_w = self._scroll.viewport().width()
+        max_scroll = max(0, self.width() - viewport_w)
+        desired = x_sel - viewport_w // 2
+        desired = max(0, min(max_scroll, desired))
+        self._scroll.horizontalScrollBar().setValue(desired)
 
     def _index_at_pos(self, x: float) -> int:
         if not self._frames:
@@ -74,6 +100,21 @@ class TimelineBar(QWidget):
             event.accept()
         else:
             super().mousePressEvent(event)
+    
+    def wheelEvent(self, event):
+        if not self._frames:
+            return
+        step = -1 if event.angleDelta().y() > 0 else 1
+        new_idx = max(0, min(len(self._frames) - 1, self._selected + step))
+        if new_idx != self._selected:
+            self._selected = new_idx
+            self.update()
+            if self._callback:
+                self._callback(new_idx)
+        if self._scroll:
+            self._center_on_selected()
+        event.accept()
+
 
     def paintEvent(self, event):
         painter = QPainter(self)

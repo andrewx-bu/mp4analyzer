@@ -121,6 +121,7 @@ def create_right_panel(
     # Timeline bar graph
     timeline = TimelineBar(frame_selected)
     scroll = QScrollArea()
+    timeline.set_scroll_area(scroll)
     scroll.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
     scroll.setWidget(timeline)
     scroll.setWidgetResizable(False)

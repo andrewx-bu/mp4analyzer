@@ -3,7 +3,7 @@ import av
 import threading
 from dataclasses import dataclass
 from collections import OrderedDict
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Callable
 from PyQt6.QtGui import QImage
 
 
@@ -45,7 +45,8 @@ class LazyVideoFrameCollection:
     """Lazily decodes video frames and caches them."""
 
     def __init__(self, file_path: str, frame_pts: List[int],
-                 frame_metadata: List[FrameData], cache_size: int = 120):
+        frame_metadata: List[FrameData], cache_size: int = 120,
+        log_callback: Optional[Callable[[str], None]] = None):
         self._file_path = file_path
         self._frame_pts = frame_pts
         self._frame_metadata = frame_metadata
@@ -53,6 +54,11 @@ class LazyVideoFrameCollection:
         self._cache: "OrderedDict[int, QImage]" = OrderedDict()
         self._cache_size = cache_size
         self._lock = threading.Lock()
+        self._log_callback = log_callback
+    
+    def _log(self, message: str):
+        if self._log_callback:
+            self._log_callback(message)
 
     # Basic collection helpers
     @property
@@ -84,14 +90,23 @@ class LazyVideoFrameCollection:
             if index in self._cache:
                 img = self._cache.pop(index)
                 self._cache[index] = img
+                self._log(f"Frame {index} retrieved from cache")
                 return img
 
         img = self._decode_frame(index)
+        if img:
+            self._log(f"Frame {index} decoded")
+        else:
+            self._log(f"Failed to decode frame {index}")
         return img
 
     def clear(self):
         with self._lock:
             self._cache.clear()
+    
+    def set_log_callback(self, callback: Optional[Callable[[str], None]]):
+        """Update the logging callback."""
+        self._log_callback = callback
 
     # Internal helpers
     def _convert_frame_to_qimage(self, av_frame) -> QImage:
@@ -109,12 +124,14 @@ class LazyVideoFrameCollection:
             return None
 
         pts = self._frame_pts[index]
+        self._log(f"Decoding frame {index} (pts {pts})")
         try:
             with av.open(self._file_path) as container:
                 stream = next(s for s in container.streams if s.type == "video")
                 container.seek(int(pts), stream=stream, any_frame=False)
 
                 current_index = self._find_gop_start(index)
+                self._log(f"Starting decode at GOP frame {current_index}")
                 while current_index < index and current_index in self._cache:
                     current_index += 1
                 for packet in container.demux(stream):
@@ -129,14 +146,17 @@ class LazyVideoFrameCollection:
                             self._cache[current_index] = image
                             while len(self._cache) > self._cache_size:
                                 self._cache.popitem(last=False)
+                            self._log(f"Cached frame {current_index}")
 
                         if current_index == index:
+                            self._log(f"Decoded requested frame {index}")
                             return image
 
                         current_index += 1
                         if current_index >= self.count:
                             return None
         except Exception:
+            self._log("Exception while decoding frame")
             return None
 
         return None

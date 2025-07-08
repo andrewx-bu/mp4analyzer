@@ -114,7 +114,10 @@ class MP4AnalyzerMainWindow(QMainWindow):
             self._log_message(f"Loading video file: {file_path}")
             
             # Load video metadata and frames
-            metadata, frame_collection = self._video_loader.load_video_file(file_path)
+            metadata, frame_collection = self._video_loader.load_video_file(
+                file_path,
+                log_callback=self._log_message
+            )
             
             if not metadata:
                 self._log_message(f"❌ Failed to load metadata: {file_path}")
@@ -219,6 +222,7 @@ class MP4AnalyzerMainWindow(QMainWindow):
         
         # Ensure valid index
         valid_index = self._frame_collection.get_valid_index(frame_index)
+        frame_meta = self._frame_collection.get_frame_metadata(valid_index)
         frame = self._frame_collection.get_frame(valid_index)
         
         if not frame:
@@ -233,6 +237,10 @@ class MP4AnalyzerMainWindow(QMainWindow):
         
         # Update state and UI
         self._current_frame_index = valid_index
+        if frame_meta:
+            self._log_message(
+                f"➡️ Frame {valid_index} ({frame_meta.frame_type}, {frame_meta.size_bytes} bytes)"
+            )
         self._update_frame_display_info(valid_index, frame)
     
     def _display_current_frame(self):

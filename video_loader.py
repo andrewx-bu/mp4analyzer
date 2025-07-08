@@ -1,6 +1,6 @@
 # Video loading and decoding utilities.
 import av
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Callable
 from PyQt6.QtGui import QImage
 from models import VideoMetadata, FrameData, LazyVideoFrameCollection
 
@@ -155,10 +155,10 @@ class VideoLoader:
     def __init__(self):
         self._decoder = VideoFrameDecoder()
     
-    def load_video_file(self, file_path: str) -> Tuple[Optional[VideoMetadata], LazyVideoFrameCollection]:
+    def load_video_file(self, file_path: str, log_callback: Optional[Callable[[str], None]] = None) -> Tuple[Optional[VideoMetadata], LazyVideoFrameCollection]:
         """Load a video file using lazy frame decoding."""
         metadata, frame_meta, frame_pts = self._decoder.parse_frames(file_path)
 
-        collection = LazyVideoFrameCollection(file_path, frame_pts, frame_meta)
+        collection = LazyVideoFrameCollection(file_path, frame_pts, frame_meta, log_callback=log_callback)
 
         return metadata, collection

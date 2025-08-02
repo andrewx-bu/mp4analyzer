@@ -170,7 +170,9 @@ class MP4AnalyzerMainWindow(QMainWindow):
         self._current_frame_index = valid_index
         
         if frame_meta:
-            self._log_message(f"➡️ Frame {valid_index} ({frame_meta.frame_type}, {frame_meta.size_bytes} bytes)")
+            self._log_message(f"➡️ Frame {valid_index} ({frame_meta.frame_type}, {frame_meta.size_bytes}B)")
+        else:
+            self._log_message(f"➡️ Frame {valid_index}")
         
         # Update UI
         self._playback_control.set_current_frame(valid_index, self._frame_collection.count)

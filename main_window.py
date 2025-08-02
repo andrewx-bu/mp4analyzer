@@ -121,8 +121,7 @@ class MP4AnalyzerMainWindow(QMainWindow):
             
             if not metadata:
                 self._log_message(f"❌ Failed to load metadata: {file_path}")
-                self._show_error_message("Failed to load video file", 
-                                       "Could not extract metadata from the selected file.")
+                self._show_error_message("Failed to load video file", "Could not extract metadata from the selected file.")
                 return
             
             # Update application state

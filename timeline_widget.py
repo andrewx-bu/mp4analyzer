@@ -27,7 +27,7 @@ class TimelineBarGraph(QWidget):
     }
     
     # Layout constants
-    BAR_WIDTH = 25           # Width of each bar in pixels
+    BAR_WIDTH = 13           # Width of each bar in pixels
     BAR_SPACING = 1          # Space between bars
     LABEL_HEIGHT = 40        # Space reserved for frame labels
     BACKGROUND_COLOR = QColor(34, 34, 34)  # Dark background
@@ -241,7 +241,7 @@ class TimelineBarGraph(QWidget):
         
         # Set font properties
         font = painter.font()
-        font.setPointSizeF(font.pointSizeF() * 1.25)
+        font.setPointSizeF(font.pointSizeF() * 1.15)
         font.setBold(True)
         painter.setFont(font)
         
@@ -270,7 +270,7 @@ class TimelineBarGraph(QWidget):
             
             # Draw selection marker at top
             marker_color = QColor('yellow')
-            marker_width = 8
+            marker_width = 6
             marker_height = 14
             
             marker_rect = QRect(

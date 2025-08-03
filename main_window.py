@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import QMainWindow, QFileDialog, QMessageBox
 from models import VideoMetadata, LazyVideoFrameCollection
 from video_loader import VideoLoader, VideoLoaderError
 from ui_components import create_main_layout, PlaybackControlWidget, LeftPanelWidget, RightPanelWidget
-from parsemp4 import parse_mp4_boxes, format_box_tree, generate_movie_info
+from parsemp4 import parse_mp4_boxes, generate_movie_info
 
 
 class MP4AnalyzerMainWindow(QMainWindow):
@@ -99,12 +99,8 @@ class MP4AnalyzerMainWindow(QMainWindow):
             # Parse MP4 boxes and detailed metadata
             try:
                 boxes = parse_mp4_boxes(file_path)
-                box_lines: List[str] = []
-                for box in boxes:
-                    box_lines.extend(format_box_tree(box))
-                box_text = "\n".join(box_lines)
             except Exception as ex:
-                box_text = f"Failed to parse boxes: {ex}"
+                self._log_message(f"Failed to parse boxes: {ex}")
                 boxes = []
 
             try:
@@ -113,7 +109,7 @@ class MP4AnalyzerMainWindow(QMainWindow):
                 metadata_text = f"Failed to extract metadata: {ex}"
 
             self._left_panel.update_metadata(metadata_text)
-            self._left_panel.update_boxes(box_text)
+            self._left_panel.update_boxes(boxes)
             self._playback_control.set_frame_range(frame_collection.count)
             self._right_panel.timeline_widget.set_frame_data(frame_collection.frame_metadata_list)
             self._display_current_frame()

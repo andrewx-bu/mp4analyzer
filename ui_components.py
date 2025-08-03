@@ -1,11 +1,12 @@
 # UI component builders for MP4 Analyzer application.
-from typing import Callable, Tuple
+from typing import Callable, Tuple, List
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QFrame, QTextEdit, QLabel, QVBoxLayout, QHBoxLayout,
     QSplitter, QWidget, QSlider, QPushButton, QSpinBox, QSizePolicy,
-    QScrollArea
+    QScrollArea, QTreeWidget, QTreeWidgetItem
 )
+from parsemp4 import MP4Box
 from video_canvas import VideoDisplayCanvas
 from timeline_widget import TimelineBarGraph
 
@@ -78,30 +79,61 @@ class LeftPanelWidget(QSplitter):
     def __init__(self, playback_control_widget: PlaybackControlWidget):
         super().__init__(Qt.Orientation.Vertical)
         
-        self.metadata_box = QTextEdit()
-        self.metadata_box.setReadOnly(True)
-        self.metadata_box.setPlaceholderText("MP4 Metadata")
-        
-        self.boxes_box = QTextEdit()
-        self.boxes_box.setReadOnly(True)
-        self.boxes_box.setPlaceholderText("MP4 Boxes")
+        self.metadata_tree = QTreeWidget()
+        self.metadata_tree.setHeaderLabels(["Property", "Value"])
+        self.metadata_tree.setTextElideMode(Qt.TextElideMode.ElideRight)
+
+        self.boxes_tree = QTreeWidget()
+        self.boxes_tree.setHeaderLabels(["Box", "Details"])
+        self.boxes_tree.setTextElideMode(Qt.TextElideMode.ElideRight)
         
         self.log_box = QTextEdit()
         self.log_box.setReadOnly(True)
         self.log_box.setPlaceholderText("Log Messages")
         
-        self.addWidget(self.metadata_box)
-        self.addWidget(self.boxes_box)
+        self.addWidget(self.metadata_tree)
+        self.addWidget(self.boxes_tree)
         self.addWidget(self.log_box)
         self.addWidget(playback_control_widget)
         
         self.setSizes([400, 160, 160, 80])
     
     def update_metadata(self, metadata_text: str):
-        self.metadata_box.setPlainText(metadata_text)
+        """Populate the metadata tree from tab-separated text."""
+        self.metadata_tree.clear()
+        current_parent = None
+        for line in metadata_text.splitlines():
+            if "\t" not in line:
+                if line.strip():
+                    current_parent = QTreeWidgetItem([line.strip()])
+                    self.metadata_tree.addTopLevelItem(current_parent)
+                else:
+                    current_parent = None
+                continue
+            key, value = line.split("\t", 1)
+            item = QTreeWidgetItem([key, value])
+            if current_parent:
+                current_parent.addChild(item)
+            else:
+                self.metadata_tree.addTopLevelItem(item)
+        self.metadata_tree.expandToDepth(1)
 
-    def update_boxes(self, box_text: str):
-        self.boxes_box.setPlainText(box_text)
+    def update_boxes(self, boxes: List[MP4Box]):
+        """Populate the boxes tree from parsed MP4 boxes."""
+        self.boxes_tree.clear()
+
+        def _add_box(parent: QTreeWidgetItem, box: MP4Box):
+            item = QTreeWidgetItem([box.type, f"size={box.size}, offset={box.offset}"])
+            parent.addChild(item)
+            for child in box.children:
+                _add_box(item, child)
+        
+        for box in boxes:
+            root_item = QTreeWidgetItem([box.type, f"size={box.size}, offset={box.offset}"])
+            self.boxes_tree.addTopLevelItem(root_item)
+            for child in box.children:
+                _add_box(root_item, child)
+        self.boxes_tree.expandToDepth(1)
     
     def add_log_message(self, message: str):
         self.log_box.append(message)

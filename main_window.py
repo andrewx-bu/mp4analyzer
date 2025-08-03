@@ -1,11 +1,12 @@
 # Main window for MP4 Analyzer application.
-from typing import Optional
+from typing import Optional, List
 from PyQt6.QtCore import Qt, QEvent
 from PyQt6.QtGui import QPixmap, QAction
 from PyQt6.QtWidgets import QMainWindow, QFileDialog, QMessageBox
 from models import VideoMetadata, LazyVideoFrameCollection
 from video_loader import VideoLoader, VideoLoaderError
 from ui_components import create_main_layout, PlaybackControlWidget, LeftPanelWidget, RightPanelWidget
+from parsemp4 import parse_mp4_boxes, format_box_tree, generate_movie_info
 
 
 class MP4AnalyzerMainWindow(QMainWindow):
@@ -94,18 +95,25 @@ class MP4AnalyzerMainWindow(QMainWindow):
             self._video_metadata = metadata
             self._frame_collection = frame_collection
             self._current_frame_index = 0
-            
-            # Update UI
-            metadata_text = (
-                f"=== Video Metadata ===\n"
-                f"Path: {metadata.file_path}\n"
-                f"Resolution: {metadata.resolution_text}\n"
-                f"Codec: {metadata.codec_name}\n"
-                f"FPS: {metadata.frames_per_second:.2f}\n"
-                f"Duration: {metadata.duration_text}\n"
-                f"Frames: {metadata.total_frames}\n"
-            )
+
+            # Parse MP4 boxes and detailed metadata
+            try:
+                boxes = parse_mp4_boxes(file_path)
+                box_lines: List[str] = []
+                for box in boxes:
+                    box_lines.extend(format_box_tree(box))
+                box_text = "\n".join(box_lines)
+            except Exception as ex:
+                box_text = f"Failed to parse boxes: {ex}"
+                boxes = []
+
+            try:
+                metadata_text = generate_movie_info(file_path, boxes)
+            except Exception as ex:
+                metadata_text = f"Failed to extract metadata: {ex}"
+
             self._left_panel.update_metadata(metadata_text)
+            self._left_panel.update_boxes(box_text)
             self._playback_control.set_frame_range(frame_collection.count)
             self._right_panel.timeline_widget.set_frame_data(frame_collection.frame_metadata_list)
             self._display_current_frame()

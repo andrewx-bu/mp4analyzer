@@ -126,7 +126,7 @@ class LazyVideoFrameCollection:
         gop_size = gop_end - gop_start + 1
         
         # Fallback for large GOPs - limit to adjacent frames
-        max_decode_frames = 40
+        max_decode_frames = 20
         if gop_size > max_decode_frames:
             # Decode adjacent frames around target
             half_range = max_decode_frames // 2

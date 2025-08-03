@@ -82,16 +82,16 @@ class LeftPanelWidget(QSplitter):
         self.metadata_box.setReadOnly(True)
         self.metadata_box.setPlaceholderText("MP4 Metadata")
         
-        self.filters_box = QTextEdit()
-        self.filters_box.setReadOnly(True)
-        self.filters_box.setPlaceholderText("Sequences/Filters")
+        self.boxes_box = QTextEdit()
+        self.boxes_box.setReadOnly(True)
+        self.boxes_box.setPlaceholderText("MP4 Boxes")
         
         self.log_box = QTextEdit()
         self.log_box.setReadOnly(True)
         self.log_box.setPlaceholderText("Log Messages")
         
         self.addWidget(self.metadata_box)
-        self.addWidget(self.filters_box)
+        self.addWidget(self.boxes_box)
         self.addWidget(self.log_box)
         self.addWidget(playback_control_widget)
         
@@ -99,6 +99,9 @@ class LeftPanelWidget(QSplitter):
     
     def update_metadata(self, metadata_text: str):
         self.metadata_box.setPlainText(metadata_text)
+
+    def update_boxes(self, box_text: str):
+        self.boxes_box.setPlainText(box_text)
     
     def add_log_message(self, message: str):
         self.log_box.append(message)

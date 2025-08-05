@@ -123,16 +123,21 @@ class LeftPanelWidget(QSplitter):
         self.boxes_tree.clear()
 
         def _add_box(parent: QTreeWidgetItem, box: MP4Box):
-            item = QTreeWidgetItem([box.type, f"size={box.size}, offset={box.offset}"])
+            item = QTreeWidgetItem([box.type])
             parent.addChild(item)
+
+            # Display box properties as children
+            for key, value in box.properties().items():
+                prop_item = QTreeWidgetItem([key, str(value)])
+                item.addChild(prop_item)
+
+            # Recurse into child boxes
             for child in box.children:
                 _add_box(item, child)
         
+        root = self.boxes_tree.invisibleRootItem()
         for box in boxes:
-            root_item = QTreeWidgetItem([box.type, f"size={box.size}, offset={box.offset}"])
-            self.boxes_tree.addTopLevelItem(root_item)
-            for child in box.children:
-                _add_box(root_item, child)
+            _add_box(root, box)
         self.boxes_tree.expandToDepth(1)
     
     def add_log_message(self, message: str):

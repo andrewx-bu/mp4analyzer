@@ -38,6 +38,8 @@ class FrameData:
     size_bytes: int
     frame_type: str
     timestamp: float
+    pts: int
+    decode_order: int
 
     @property
     def is_keyframe(self) -> bool:

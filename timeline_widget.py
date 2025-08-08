@@ -2,7 +2,7 @@
 from typing import Callable, List, Optional
 from PyQt6.QtCore import Qt, QRect
 from PyQt6.QtGui import QColor, QPainter, QPen
-from PyQt6.QtWidgets import QWidget, QScrollArea
+from PyQt6.QtWidgets import QWidget, QScrollArea, QToolTip
 from models import FrameData
 
 
@@ -73,11 +73,23 @@ class TimelineBarGraph(QWidget):
         if hovered != self._hovered_frame:
             self._hovered_frame = hovered
             self.update()
+        
+        if 0 <= hovered < len(self._frame_data):
+            frame = self._frame_data[hovered]
+            text = (
+                f"Frame: {hovered}\n"
+                f"Bytes: {frame.size_bytes}\n"
+                f"PTS: {frame.pts}\n"
+                f"Decode Order: {frame.decode_order}\n"
+                f"Timestamp: {frame.timestamp:.3f}"
+            )
+            QToolTip.showText(event.globalPosition().toPoint(), text, self)
     
     def leaveEvent(self, event):
         if self._hovered_frame != -1:
             self._hovered_frame = -1
             self.update()
+        QToolTip.hideText()
     
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton and self._frame_data:

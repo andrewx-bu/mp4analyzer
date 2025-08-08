@@ -149,6 +149,13 @@ class MP4AnalyzerMainWindow(QMainWindow):
     
     def _handle_frame_selected(self, frame_index: int):
         self._display_frame(frame_index)
+        frame_meta = self._frame_collection.get_frame_metadata(frame_index)
+        if frame_meta:
+            self._log_message(
+                f"Frame {frame_index}: {frame_meta.size_bytes} bytes, "
+                f"PTS {frame_meta.pts}, Decode {frame_meta.decode_order}, "
+                f"TS {frame_meta.timestamp:.3f}"
+            )
     
     def _navigate_frame(self, offset: int):
         self._display_frame(self._current_frame_index + offset)

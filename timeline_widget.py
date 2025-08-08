@@ -23,6 +23,7 @@ class TimelineBarGraph(QWidget):
     BAR_WIDTH = 13
     BAR_SPACING = 1
     LABEL_HEIGHT = 40
+    MIN_BAR_HEIGHT = 1
 
     def __init__(self, frame_selection_callback: Callable[[int], None]):
         super().__init__()
@@ -139,6 +140,8 @@ class TimelineBarGraph(QWidget):
         bar_rects: List[QRect] = []
         for i, frame in enumerate(self._frame_data):
             bar_height = int(frame.size_bytes / max_size * (usable_height - 10))
+            if bar_height < self.MIN_BAR_HEIGHT:
+                bar_height = self.MIN_BAR_HEIGHT
             bar_x = i * (self.BAR_WIDTH + self.BAR_SPACING)
             bar_y = usable_height - bar_height
 

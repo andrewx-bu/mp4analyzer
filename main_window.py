@@ -23,6 +23,7 @@ class MP4AnalyzerMainWindow(QMainWindow):
         self._current_frame_index = 0
         self._zoom_factor = 1.0
         self._video_loader = VideoLoader()
+        self._last_display_log_index: Optional[int] = None
         
         # UI components
         self._playback_control: Optional[PlaybackControlWidget] = None
@@ -95,6 +96,7 @@ class MP4AnalyzerMainWindow(QMainWindow):
             self._video_metadata = metadata
             self._frame_collection = frame_collection
             self._current_frame_index = 0
+            self._last_display_log_index = None
 
             # Parse MP4 boxes and detailed metadata
             try:
@@ -173,10 +175,12 @@ class MP4AnalyzerMainWindow(QMainWindow):
         self._right_panel.video_canvas.display_frame(pixmap)
         self._current_frame_index = valid_index
         
-        if frame_meta:
-            self._log_message(f"➡️ Frame {valid_index} ({frame_meta.frame_type}, {frame_meta.size_bytes}B)")
-        else:
-            self._log_message(f"➡️ Frame {valid_index}")
+        if self._last_display_log_index != valid_index:
+            if frame_meta:
+                self._log_message(f"➡️ Frame {valid_index} ({frame_meta.frame_type}, {frame_meta.size_bytes}B)")
+            else:
+                self._log_message(f"➡️ Frame {valid_index}")
+            self._last_display_log_index = valid_index
         
         # Update UI
         self._playback_control.set_current_frame(valid_index, self._frame_collection.count)

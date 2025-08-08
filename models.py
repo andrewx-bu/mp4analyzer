@@ -58,6 +58,7 @@ class LazyVideoFrameCollection:
         self._lock = threading.Lock()
         self._log_callback = log_callback
         self._temp_dir = tempfile.mkdtemp()
+        self._last_cache_log_index = None
 
     @property
     def count(self) -> int:
@@ -83,7 +84,9 @@ class LazyVideoFrameCollection:
             if index in self._cache:
                 img = self._cache.pop(index)
                 self._cache[index] = img
-                self._log(f"Frame {index} retrieved from cache")
+                if self._last_cache_log_index != index:
+                    self._log(f"Frame {index} retrieved from cache")
+                    self._last_cache_log_index = index
                 return img
 
         # Decode GOP containing this frame
@@ -102,6 +105,7 @@ class LazyVideoFrameCollection:
     def clear(self):
         with self._lock:
             self._cache.clear()
+        self._last_cache_log_index = None
         try:
             shutil.rmtree(self._temp_dir, ignore_errors=True)
             self._temp_dir = tempfile.mkdtemp()

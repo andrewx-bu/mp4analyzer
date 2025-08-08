@@ -1,4 +1,7 @@
 import pytest
+
+pytest.importorskip("PyQt6.QtCore")
+
 from PyQt6.QtCore import Qt
 from main_window import MP4AnalyzerMainWindow
 from ui_components import PlaybackControlWidget

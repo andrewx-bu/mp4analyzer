@@ -6,6 +6,7 @@ from typing import List, Dict
 @dataclass
 class MP4Box:
     """Represents a generic MP4 box/atom."""
+
     type: str
     size: int
     offset: int

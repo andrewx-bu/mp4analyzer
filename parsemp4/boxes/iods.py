@@ -24,11 +24,13 @@ class ObjectDescriptorBox(MP4Box):
         version = data[0]
         flags = int.from_bytes(data[1:4], "big")
         descriptor = data[4:]
-        return cls(box_type, size, offset, children or [], None, version, flags, descriptor)
+        return cls(
+            box_type, size, offset, children or [], None, version, flags, descriptor
+        )
 
     def properties(self) -> Dict[str, object]:
         hexstr = self.descriptor.hex()
-        grouped = " ".join(hexstr[i:i + 8] for i in range(0, len(hexstr), 8))
+        grouped = " ".join(hexstr[i : i + 8] for i in range(0, len(hexstr), 8))
         return {
             "size": self.size,
             "flags": self.flags,

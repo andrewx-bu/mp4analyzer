@@ -1,7 +1,13 @@
 from typing import BinaryIO, List, Dict, Type
 import os
 import struct
-from .boxes import MP4Box, FileTypeBox, MovieHeaderBox, TrackHeaderBox, ObjectDescriptorBox
+from .boxes import (
+    MP4Box,
+    FileTypeBox,
+    MovieHeaderBox,
+    TrackHeaderBox,
+    ObjectDescriptorBox,
+)
 
 
 # Common container box types that can contain child boxes
@@ -48,7 +54,9 @@ def _read_u64(f: BinaryIO) -> int:
     return struct.unpack(">Q", data)[0]
 
 
-def _parse_box(f: BinaryIO, file_size: int, parent_end: int | None = None) -> MP4Box | None:
+def _parse_box(
+    f: BinaryIO, file_size: int, parent_end: int | None = None
+) -> MP4Box | None:
     start_offset = f.tell()
     if parent_end is not None and start_offset >= parent_end:
         return None
@@ -81,7 +89,9 @@ def _parse_box(f: BinaryIO, file_size: int, parent_end: int | None = None) -> MP
                 break
             children.append(child)
     else:
-        if payload_size > 0 and (box_type in BOX_PARSERS or box_type in RAW_DATA_BOX_TYPES):
+        if payload_size > 0 and (
+            box_type in BOX_PARSERS or box_type in RAW_DATA_BOX_TYPES
+        ):
             data = f.read(payload_size)
         else:
             f.seek(payload_size, os.SEEK_CUR)
@@ -89,7 +99,9 @@ def _parse_box(f: BinaryIO, file_size: int, parent_end: int | None = None) -> MP
     box_cls = BOX_PARSERS.get(box_type)
     if box_cls:
         # For parsed boxes we expect data to be present
-        parsed_box = box_cls.from_parsed(box_type, size, start_offset, data or b"", children)
+        parsed_box = box_cls.from_parsed(
+            box_type, size, start_offset, data or b"", children
+        )
         return parsed_box
 
     return MP4Box(box_type, size, start_offset, children, data)

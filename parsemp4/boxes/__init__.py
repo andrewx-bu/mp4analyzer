@@ -8,7 +8,7 @@ from .iods import ObjectDescriptorBox
 
 __all__ = [
     "MP4Box",
-    "FileTypeBox", 
+    "FileTypeBox",
     "MovieHeaderBox",
     "TrackHeaderBox",
     "ObjectDescriptorBox",

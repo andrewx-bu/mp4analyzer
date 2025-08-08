@@ -34,35 +34,38 @@ class TrackHeaderBox(MP4Box):
         version = data[0]
         flags = int.from_bytes(data[1:4], "big")
         pos = 4
-        
+
         if version == 1:
-            creation_time = struct.unpack(">Q", data[pos:pos+8])[0]
-            modification_time = struct.unpack(">Q", data[pos+8:pos+16])[0]
-            track_id = struct.unpack(">I", data[pos+16:pos+20])[0]
+            creation_time = struct.unpack(">Q", data[pos : pos + 8])[0]
+            modification_time = struct.unpack(">Q", data[pos + 8 : pos + 16])[0]
+            track_id = struct.unpack(">I", data[pos + 16 : pos + 20])[0]
             pos += 24  # skip reserved
-            duration = struct.unpack(">Q", data[pos:pos+8])[0]
+            duration = struct.unpack(">Q", data[pos : pos + 8])[0]
             pos += 8
         else:
-            creation_time = struct.unpack(">I", data[pos:pos+4])[0]
-            modification_time = struct.unpack(">I", data[pos+4:pos+8])[0]
-            track_id = struct.unpack(">I", data[pos+8:pos+12])[0]
+            creation_time = struct.unpack(">I", data[pos : pos + 4])[0]
+            modification_time = struct.unpack(">I", data[pos + 4 : pos + 8])[0]
+            track_id = struct.unpack(">I", data[pos + 8 : pos + 12])[0]
             pos += 16  # skip reserved
-            duration = struct.unpack(">I", data[pos:pos+4])[0]
+            duration = struct.unpack(">I", data[pos : pos + 4])[0]
             pos += 4
-        
+
         pos += 8  # skip reserved
-        layer = struct.unpack(">h", data[pos:pos+2])[0]
-        alternate_group = struct.unpack(">h", data[pos+2:pos+4])[0]
-        volume = struct.unpack(">H", data[pos+4:pos+6])[0] / 256
+        layer = struct.unpack(">h", data[pos : pos + 2])[0]
+        alternate_group = struct.unpack(">h", data[pos + 2 : pos + 4])[0]
+        volume = struct.unpack(">H", data[pos + 4 : pos + 6])[0] / 256
         pos += 6
         pos += 2  # skip reserved
-        
-        matrix = [struct.unpack(">I", data[pos+i*4:pos+(i+1)*4])[0] for i in range(9)]
+
+        matrix = [
+            struct.unpack(">I", data[pos + i * 4 : pos + (i + 1) * 4])[0]
+            for i in range(9)
+        ]
         pos += 36
-        
-        width = struct.unpack(">I", data[pos:pos+4])[0]
-        height = struct.unpack(">I", data[pos+4:pos+8])[0]
-        
+
+        width = struct.unpack(">I", data[pos : pos + 4])[0]
+        height = struct.unpack(">I", data[pos + 4 : pos + 8])[0]
+
         return cls(
             box_type,
             size,

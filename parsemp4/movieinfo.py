@@ -6,7 +6,7 @@ import os
 import struct
 from typing import List
 
-from .mp4box import MP4Box, MovieHeaderBox
+from .boxes import MP4Box, MovieHeaderBox
 
 
 def _run_ffprobe(cmd: List[str]) -> dict:

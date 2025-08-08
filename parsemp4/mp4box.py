@@ -71,20 +71,227 @@ class FileTypeBox(MP4Box):
         )
         return props
 
+
+@dataclass
+class MovieHeaderBox(MP4Box):
+    """Movie Header Box (``mvhd``)."""
+
+    version: int = 0
+    flags: int = 0
+    timescale: int = 0
+    duration: int = 0
+    creation_time: int = 0
+    modification_time: int = 0
+    rate: int = 0
+    volume: float = 0.0
+    matrix: List[int] = field(default_factory=list)
+    next_track_id: int = 0
+
+    @classmethod
+    def from_parsed(
+        cls,
+        box_type: str,
+        size: int,
+        offset: int,
+        data: bytes,
+        children: List["MP4Box"] | None = None,
+    ) -> "MovieHeaderBox":
+        version = data[0]
+        flags = int.from_bytes(data[1:4], "big")
+        pos = 4
+        if version == 1:
+            creation_time = struct.unpack(">Q", data[pos : pos + 8])[0]
+            modification_time = struct.unpack(">Q", data[pos + 8 : pos + 16])[0]
+            timescale = struct.unpack(">I", data[pos + 16 : pos + 20])[0]
+            duration = struct.unpack(">Q", data[pos + 20 : pos + 28])[0]
+            pos += 28
+        else:
+            creation_time = struct.unpack(">I", data[pos : pos + 4])[0]
+            modification_time = struct.unpack(">I", data[pos + 4 : pos + 8])[0]
+            timescale = struct.unpack(">I", data[pos + 8 : pos + 12])[0]
+            duration = struct.unpack(">I", data[pos + 12 : pos + 16])[0]
+            pos += 16
+        rate = struct.unpack(">I", data[pos : pos + 4])[0]
+        volume = struct.unpack(">H", data[pos + 4 : pos + 6])[0] / 256
+        pos += 6
+        pos += 10  # reserved
+        matrix = [
+            struct.unpack(">I", data[pos + i * 4 : pos + (i + 1) * 4])[0]
+            for i in range(9)
+        ]
+        pos += 36
+        pos += 24  # pre-defined
+        next_track_id = struct.unpack(">I", data[pos : pos + 4])[0]
+        return cls(
+            box_type,
+            size,
+            offset,
+            children or [],
+            None,
+            version,
+            flags,
+            timescale,
+            duration,
+            creation_time,
+            modification_time,
+            rate,
+            volume,
+            matrix,
+            next_track_id,
+        )
+
+    def properties(self) -> Dict[str, object]:
+        return {
+            "size": self.size,
+            "flags": self.flags,
+            "version": self.version,
+            "box_name": self.__class__.__name__,
+            "start": self.offset,
+            "creation_time": self.creation_time,
+            "modification_time": self.modification_time,
+            "timescale": self.timescale,
+            "duration": self.duration,
+            "rate": self.rate,
+            "volume": self.volume,
+            "matrix": self.matrix,
+            "next_track_id": self.next_track_id,
+        }
+
+
+@dataclass
+class TrackHeaderBox(MP4Box):
+    """Track Header Box (``tkhd``)."""
+
+    version: int = 0
+    track_id: int = 0
+    duration: int = 0
+    width: float = 0.0
+    height: float = 0.0
+    creation_time: int = 0
+    modification_time: int = 0
+
+    @classmethod
+    def from_parsed(
+        cls,
+        box_type: str,
+        size: int,
+        offset: int,
+        data: bytes,
+        children: List["MP4Box"] | None = None,
+    ) -> "TrackHeaderBox":
+        version = data[0]
+        if version == 1:
+            creation_time = struct.unpack(">Q", data[4:12])[0]
+            modification_time = struct.unpack(">Q", data[12:20])[0]
+            track_id = struct.unpack(">I", data[20:24])[0]
+            duration = struct.unpack(">Q", data[28:36])[0]
+            width = struct.unpack(">I", data[88:92])[0] / 65536
+            height = struct.unpack(">I", data[92:96])[0] / 65536
+        else:
+            creation_time = struct.unpack(">I", data[4:8])[0]
+            modification_time = struct.unpack(">I", data[8:12])[0]
+            track_id = struct.unpack(">I", data[12:16])[0]
+            duration = struct.unpack(">I", data[20:24])[0]
+            width = struct.unpack(">I", data[76:80])[0] / 65536
+            height = struct.unpack(">I", data[80:84])[0] / 65536
+        return cls(
+            box_type,
+            size,
+            offset,
+            children or [],
+            None,
+            version,
+            track_id,
+            duration,
+            width,
+            height,
+            creation_time,
+            modification_time,
+        )
+
+    def properties(self) -> Dict[str, object]:
+        props = super().properties()
+        props.update(
+            {
+                "version": self.version,
+                "track_id": self.track_id,
+                "duration": self.duration,
+                "width": self.width,
+                "height": self.height,
+            }
+        )
+        return props
+
+
+@dataclass
+class ObjectDescriptorBox(MP4Box):
+    """Object Descriptor Box (``iods``)."""
+
+    version: int = 0
+    flags: int = 0
+    descriptor: bytes = b""
+
+    @classmethod
+    def from_parsed(
+        cls,
+        box_type: str,
+        size: int,
+        offset: int,
+        data: bytes,
+        children: List["MP4Box"] | None = None,
+    ) -> "ObjectDescriptorBox":
+        version = data[0]
+        flags = int.from_bytes(data[1:4], "big")
+        descriptor = data[4:]
+        return cls(box_type, size, offset, children or [], None, version, flags, descriptor)
+
+    def properties(self) -> Dict[str, object]:
+        hexstr = self.descriptor.hex()
+        grouped = " ".join(hexstr[i:i + 8] for i in range(0, len(hexstr), 8))
+        return {
+            "size": self.size,
+            "flags": self.flags,
+            "version": self.version,
+            "box_name": self.__class__.__name__,
+            "start": self.offset,
+            "data": grouped,
+        }
+
 # Common container box types that can contain child boxes
 CONTAINER_BOX_TYPES = {
-    "moov", "trak", "mdia", "minf", "stbl", "edts", "dinf",
-    "mvex", "moof", "traf", "mfra", "udta", "meta", "ilst",
-    "tref", "stsd", "sinf", "schi", "strk", "strd", "senc",
+    "moov",
+    "trak",
+    "mdia",
+    "minf",
+    "stbl",
+    "edts",
+    "dinf",
+    "mvex",
+    "moof",
+    "traf",
+    "mfra",
+    "udta",
+    "meta",
+    "ilst",
+    "tref",
+    "stsd",
+    "sinf",
+    "schi",
+    "strk",
+    "strd",
+    "senc",
 }
 
 # Mapping of box type to specialised box class
 BOX_PARSERS: Dict[str, Type[MP4Box]] = {
     "ftyp": FileTypeBox,
+    "mvhd": MovieHeaderBox,
+    "tkhd": TrackHeaderBox,
+    "iods": ObjectDescriptorBox,
 }
 
 # Box types for which raw payload data should be captured for later processing
-RAW_DATA_BOX_TYPES = {"mvhd", "tkhd", "mdhd", "hdlr", "stsd"}
+RAW_DATA_BOX_TYPES = {"mdhd", "hdlr", "stsd"}
 
 def _read_u64(f: BinaryIO) -> int:
     data = f.read(8)

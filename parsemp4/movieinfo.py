@@ -3,11 +3,10 @@ from __future__ import annotations
 import subprocess
 import json
 import os
-import datetime
 import struct
 from typing import List
 
-from .mp4box import MP4Box
+from .mp4box import MP4Box, MovieHeaderBox
 
 
 def _run_ffprobe(cmd: List[str]) -> dict:
@@ -34,7 +33,11 @@ def _find_box(boxes: List[MP4Box], box_type: str) -> MP4Box | None:
 
 
 def _parse_mvhd(box: MP4Box) -> tuple[int, int]:
-    if not box or not box.data:
+    if not box:
+        return 0, 0
+    if isinstance(box, MovieHeaderBox):
+        return box.timescale, box.duration
+    if not box.data:
         return 0, 0
     data = box.data
     version = data[0]

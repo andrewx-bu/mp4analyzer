@@ -90,33 +90,58 @@ def generate_movie_info(file_path: str, boxes: List[MP4Box]) -> str:
             codecs.append(codec)
     mime = f"video/mp4; codecs=\"{','.join(codecs)}\"" if codecs else 'video/mp4'
 
+    profiles = [major_brand] + compat_list if major_brand else compat_list
+    mime_parts = ['video/mp4']
+    if codecs:
+        mime_parts.append(f"codecs=\"{','.join(codecs)}\"")
+    if profiles:
+        mime_parts.append(f"profiles=\"{','.join(profiles)}\"")
+    mime = '; '.join(mime_parts)
+
     fragmented = any(b.type in {'moof', 'mvex'} for b in boxes)
-    progressive = False
+    # Progressive means moov box comes before mdat (streamable)
+    moov_offset = next((b.offset for b in boxes if b.type == 'moov'), float('inf'))
+    mdat_offset = next((b.offset for b in boxes if b.type == 'mdat'), float('inf'))
+    progressive = moov_offset < mdat_offset
     iod = _find_box(boxes, 'iods') is not None
 
     creation_time = tags.get('creation_time', '')
     modification_time = tags.get('modification_time', '')
+    
+    # Also check mvhd box for times if not in tags
+    if not creation_time and mvhd and isinstance(mvhd, MovieHeaderBox):
+        if mvhd.creation_time:
+            creation_time = str(mvhd.creation_time)
+        if mvhd.modification_time:
+            modification_time = str(mvhd.modification_time)
+    
+    # Set modification = creation if not modified later
+    if creation_time and not modification_time:
+        modification_time = creation_time
 
     lines: List[str] = []
     lines.append('Movie Info')
-    lines.append(f"File Size / Bitrate\t{file_size} bytes / {bit_rate // 1000} kbps")
+    lines.append(f"File Size\t{file_size:,} bytes ({file_size / (1024*1024):.1f} MB)")
+    lines.append(f"Bitrate\t{bit_rate // 1000} kbps")
     if timescale and duration_units:
         lines.append(
-            f"Duration / Timescale\t{duration_units}/{timescale} ({_format_duration(duration_units / timescale)})"
+            f"Duration\t{_format_duration(duration_units / timescale)} ({duration_units}/{timescale} units)"
         )
     elif duration_sec:
         lines.append(f"Duration\t{_format_duration(duration_sec)}")
     if major_brand:
         brand_line = [major_brand] + compat_list
-        lines.append(f"Brands (major/compatible)\t{','.join(brand_line)}")
+        lines.append(f"Brands\t{major_brand} (compatible: {', '.join(compat_list) if compat_list else 'none'})")
     lines.append(f"MIME\t{mime}")
-    lines.append(f"Progressive\t{str(progressive).lower()}")
-    lines.append(f"Fragmented\t{str(fragmented).lower()}")
-    lines.append(f"MPEG-4 IOD\t{str(iod).lower()}")
-    if creation_time or modification_time:
-        lines.append(
-            f"Creation / Modification Dates\t{creation_time} / {modification_time}"
-        )
+    lines.append(f"Progressive\t{'✓ Yes' if progressive else '✗ No'}")
+    lines.append(f"Fragmented\t{'✓ Yes' if fragmented else '✗ No'}")
+    lines.append(f"MPEG-4 IOD\t{'✓ Present' if iod else '✗ Not present'}")
+    if creation_time:
+        lines.append(f"Created\t{creation_time}")
+    if modification_time and modification_time != creation_time:
+        lines.append(f"Modified\t{modification_time}")
+    elif modification_time == creation_time:
+        lines.append(f"Modified\tSame as creation time")
     lines.append('')
 
     video_streams = [s for s in streams if s.get('codec_type') == 'video']

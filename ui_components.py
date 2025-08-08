@@ -91,8 +91,8 @@ class LeftPanelWidget(QSplitter):
         self.log_box.setReadOnly(True)
         self.log_box.setPlaceholderText("Log Messages")
         
-        self.addWidget(self.metadata_tree)
         self.addWidget(self.boxes_tree)
+        self.addWidget(self.metadata_tree)
         self.addWidget(self.log_box)
         self.addWidget(playback_control_widget)
         

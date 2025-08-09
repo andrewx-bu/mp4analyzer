@@ -5,6 +5,8 @@ from .ftyp import FileTypeBox
 from .mvhd import MovieHeaderBox
 from .tkhd import TrackHeaderBox
 from .iods import ObjectDescriptorBox
+from .moov import MovieBox
+from .trak import TrackBox
 
 __all__ = [
     "MP4Box",
@@ -12,4 +14,6 @@ __all__ = [
     "MovieHeaderBox",
     "TrackHeaderBox",
     "ObjectDescriptorBox",
+    "MovieBox",
+    "TrackBox",
 ]

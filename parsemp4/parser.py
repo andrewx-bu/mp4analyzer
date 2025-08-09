@@ -7,6 +7,8 @@ from .boxes import (
     MovieHeaderBox,
     TrackHeaderBox,
     ObjectDescriptorBox,
+    MovieBox,
+    TrackBox,
 )
 
 
@@ -41,10 +43,12 @@ BOX_PARSERS: Dict[str, Type[MP4Box]] = {
     "mvhd": MovieHeaderBox,
     "tkhd": TrackHeaderBox,
     "iods": ObjectDescriptorBox,
+    "moov": MovieBox,
+    "trak": TrackBox,
 }
 
 # Box types for which raw payload data should be captured for later processing
-RAW_DATA_BOX_TYPES = {"mdhd", "hdlr", "stsd"}
+RAW_DATA_BOX_TYPES = {"mdhd", "hdlr", "stsd", "stts", "stsz", "sbgp", "sgpd"}
 
 
 def _read_u64(f: BinaryIO) -> int:

@@ -5,7 +5,7 @@ from PyQt6.QtGui import QPixmap, QAction
 from PyQt6.QtWidgets import QMainWindow, QFileDialog, QMessageBox
 from models import VideoMetadata, LazyVideoFrameCollection
 from video_loader import VideoLoader, VideoLoaderError
-from ui_components import (
+from ui.ui_components import (
     create_main_layout,
     PlaybackControlWidget,
     LeftPanelWidget,

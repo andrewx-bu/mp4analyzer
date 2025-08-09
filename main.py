@@ -1,7 +1,7 @@
 # Entry point for MP4 Analyzer application.
 import sys
 from PyQt6.QtWidgets import QApplication
-from main_window import MP4AnalyzerMainWindow
+from ui.main_window import MP4AnalyzerMainWindow
 
 
 def main():

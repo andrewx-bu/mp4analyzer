@@ -3,8 +3,8 @@ import pytest
 pytest.importorskip("PyQt6.QtCore")
 
 from PyQt6.QtCore import Qt
-from main_window import MP4AnalyzerMainWindow
-from ui_components import PlaybackControlWidget
+from ui.main_window import MP4AnalyzerMainWindow
+from ui.ui_components import PlaybackControlWidget
 
 
 def test_main_window_initialization(qtbot):

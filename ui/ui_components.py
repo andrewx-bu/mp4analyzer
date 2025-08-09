@@ -18,8 +18,8 @@ from PyQt6.QtWidgets import (
     QTreeWidgetItem,
 )
 from parsemp4 import MP4Box
-from video_canvas import VideoDisplayCanvas
-from timeline_widget import TimelineBarGraph
+from ui.video_canvas import VideoDisplayCanvas
+from ui.timeline_widget import TimelineBarGraph
 
 
 class PlaybackControlWidget(QFrame):

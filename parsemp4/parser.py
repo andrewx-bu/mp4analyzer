@@ -9,6 +9,8 @@ from .boxes import (
     ObjectDescriptorBox,
     MovieBox,
     TrackBox,
+    FreeSpaceBox,
+    MediaDataBox,
 )
 
 
@@ -45,6 +47,7 @@ BOX_PARSERS: Dict[str, Type[MP4Box]] = {
     "iods": ObjectDescriptorBox,
     "moov": MovieBox,
     "trak": TrackBox,
+    "free": FreeSpaceBox,
 }
 
 # Box types for which raw payload data should be captured for later processing
@@ -82,6 +85,11 @@ def _parse_box(
 
     payload_size = size - header_size
     payload_end = start_offset + size
+
+    if box_type == "mdat":
+        f.seek(payload_size, os.SEEK_CUR)
+        return MediaDataBox(box_type, size, start_offset)
+
 
     children: List[MP4Box] = []
     data: bytes | None = None

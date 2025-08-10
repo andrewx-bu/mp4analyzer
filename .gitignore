@@ -3,3 +3,6 @@ __pycache__/
 .venv/
 mp4analyzer.egg-info/
 *.mp4
+build/
+dist/
+*.spec

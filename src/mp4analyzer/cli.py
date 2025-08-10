@@ -85,12 +85,17 @@ def _output_stdout(
     file_path: str, boxes, movie_info: str, detailed: bool = False
 ) -> None:
     """Output analysis to stdout in human-readable format."""
-    print(f"MP4 Analysis: {Path(file_path).name}")
+    title = f"MP4 Analysis: {Path(file_path).name}"
+    print(title.center(60))
     print("=" * 60)
     print()
 
     # Movie info
-    print(movie_info)
+    movie_lines = movie_info.splitlines()
+    if movie_lines:
+        print(movie_lines[0].center(60))
+        for line in movie_lines[1:]:
+            print(line)
     print()
 
     # Box structure

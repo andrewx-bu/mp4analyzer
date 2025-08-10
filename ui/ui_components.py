@@ -91,9 +91,8 @@ class LeftPanelWidget(QSplitter):
     def __init__(self, playback_control_widget: PlaybackControlWidget):
         super().__init__(Qt.Orientation.Vertical)
 
-        self.metadata_tree = QTreeWidget()
-        self.metadata_tree.setHeaderLabels(["Property", "Value"])
-        self.metadata_tree.setTextElideMode(Qt.TextElideMode.ElideRight)
+        self.metadata_view = QTextEdit()
+        self.metadata_view.setReadOnly(True)
 
         self.boxes_tree = QTreeWidget()
         self.boxes_tree.setHeaderLabels(["Box", "Details"])
@@ -101,55 +100,38 @@ class LeftPanelWidget(QSplitter):
 
         monospace_font = QFont("Courier New")
         monospace_font.setStyleHint(QFont.StyleHint.Monospace)
-        self.metadata_tree.setFont(monospace_font)
+        self.metadata_view.setFont(monospace_font)
         self.boxes_tree.setFont(monospace_font)
 
-        for tree in (self.metadata_tree, self.boxes_tree):
-            tree.setStyleSheet(
-                """
-                QTreeView::item {
-                    border-right: 1px solid #555;
-                }
-                QTreeView::item:last {
-                    border-right: none;
-                }
-                QTreeView::item:selected {
-                    background: purple;
-                    color: white;
-                }
-                """
-            )
+        self.boxes_tree.setStyleSheet(
+            """
+            QTreeView::item {
+                border-right: 1px solid #555;
+            }
+            QTreeView::item:last {
+                border-right: none;
+            }
+            QTreeView::item:selected {
+                background: purple;
+                color: white;
+            }
+            """
+        )
 
         self.log_box = QTextEdit()
         self.log_box.setReadOnly(True)
         self.log_box.setPlaceholderText("Log Messages")
 
+        self.addWidget(self.metadata_view)
         self.addWidget(self.boxes_tree)
-        self.addWidget(self.metadata_tree)
         self.addWidget(self.log_box)
         self.addWidget(playback_control_widget)
 
-        self.setSizes([400, 160, 160, 80])
+        self.setSizes([160, 440, 120, 80])
 
     def update_metadata(self, metadata_text: str):
-        """Populate the metadata tree from tab-separated text."""
-        self.metadata_tree.clear()
-        current_parent = None
-        for line in metadata_text.splitlines():
-            if "\t" not in line:
-                if line.strip():
-                    current_parent = QTreeWidgetItem([line.strip()])
-                    self.metadata_tree.addTopLevelItem(current_parent)
-                else:
-                    current_parent = None
-                continue
-            key, value = line.split("\t", 1)
-            item = QTreeWidgetItem([key, value])
-            if current_parent:
-                current_parent.addChild(item)
-            else:
-                self.metadata_tree.addTopLevelItem(item)
-        self.metadata_tree.expandToDepth(1)
+        """Display formatted metadata text."""
+        self.metadata_view.setPlainText(metadata_text)
 
     def update_boxes(self, boxes: List[MP4Box]):
         """Populate the boxes tree from parsed MP4 boxes."""

@@ -58,7 +58,7 @@ class LazyVideoFrameCollection:
         file_path: str,
         frame_timestamps: List[float],
         frame_metadata: List[FrameData],
-        cache_size: int = 120,
+        cache_size: int = 60,
         log_callback: Optional[Callable[[str], None]] = None,
     ):
         self._file_path = file_path

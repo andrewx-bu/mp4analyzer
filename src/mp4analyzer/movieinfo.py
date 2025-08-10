@@ -145,32 +145,44 @@ def generate_movie_info(file_path: str, boxes: List[MP4Box]) -> str:
     if creation_time and not modification_time:
         modification_time = creation_time
 
-    lines: List[str] = []
-    lines.append("Movie Info")
-    lines.append(f"File Size\t{file_size:,} bytes ({file_size / (1024*1024):.1f} MB)")
-    lines.append(f"Bitrate\t{bit_rate // 1000} kbps")
+    info_pairs: List[tuple[str, str]] = []
+    info_pairs.append(
+        (
+            "File Size",
+            f"{file_size:,} bytes ({file_size / (1024*1024):.1f} MB)",
+        )
+    )
+    info_pairs.append(("Bitrate", f"{bit_rate // 1000} kbps"))
     if timescale and duration_units:
-        lines.append(
-            f"Duration\t{_format_duration(duration_units / timescale)} ({duration_units}/{timescale} units)"
+        info_pairs.append(
+            (
+                "Duration",
+                f"{_format_duration(duration_units / timescale)} ({duration_units}/{timescale} units)",
+            )
         )
     elif duration_sec:
-        lines.append(f"Duration\t{_format_duration(duration_sec)}")
+        info_pairs.append(("Duration", _format_duration(duration_sec)))
     if major_brand:
-        brand_line = [major_brand] + compat_list
-        lines.append(
-            f"Brands\t{major_brand} (compatible: {', '.join(compat_list) if compat_list else 'none'})"
+        info_pairs.append(
+            (
+                "Brands",
+                f"{major_brand} (compatible: {', '.join(compat_list) if compat_list else 'none'})",
+            )
         )
-    lines.append(f"MIME\t{mime}")
-    lines.append(f"Progressive\t{'✓ Yes' if progressive else '✗ No'}")
-    lines.append(f"Fragmented\t{'✓ Yes' if fragmented else '✗ No'}")
-    lines.append(f"MPEG-4 IOD\t{'✓ Present' if iod else '✗ Not present'}")
+    info_pairs.append(("MIME", mime))
+    info_pairs.append(("Progressive", "✓ Yes" if progressive else "✗ No"))
+    info_pairs.append(("Fragmented", "✓ Yes" if fragmented else "✗ No"))
+    info_pairs.append(("MPEG-4 IOD", "✓ Present" if iod else "✗ Not present"))
     if creation_time:
-        lines.append(f"Created\t{creation_time}")
+        info_pairs.append(("Created", creation_time))
     if modification_time and modification_time != creation_time:
-        lines.append(f"Modified\t{modification_time}")
+        info_pairs.append(("Modified", modification_time))
     elif modification_time == creation_time:
-        lines.append(f"Modified\tSame as creation time")
-    lines.append("")
+        info_pairs.append(("Modified", "Same as creation time"))
+
+    key_width = max(len(k) for k, _ in info_pairs)
+    lines: List[str] = ["Movie Info"]
+    lines.extend(f"{k.ljust(key_width)}  {v}" for k, v in info_pairs)
 
     video_streams = [s for s in streams if s.get("codec_type") == "video"]
     if video_streams:

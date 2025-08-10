@@ -1,29 +1,33 @@
 name: Build
 on:
   push:
-    tags: ['v*']
+    branches: [ "test-build" ]   # or "**"
+    tags: [ "v*" ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
-    
+
     steps:
     - uses: actions/checkout@v4
+
     - uses: actions/setup-python@v4
       with:
-        python-version: '3.11'
-    
+        python-version: "3.11"
+
     - name: Install deps
       run: |
-        pip install -r requirements.txt PyInstaller
-    
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt pyinstaller
+
     - name: Build
       run: pyinstaller --onefile --windowed --name mp4analyzer main.py
-    
+
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
@@ -43,5 +47,6 @@ jobs:
     - uses: softprops/action-gh-release@v1
       with:
         files: artifacts/**/*
+        draft: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

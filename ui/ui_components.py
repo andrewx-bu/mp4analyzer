@@ -1,5 +1,6 @@
 # UI component builders for MP4 Analyzer application.
 from typing import Callable, Tuple, List
+import html
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QBrush, QColor, QFont
 from PyQt6.QtWidgets import (
@@ -92,7 +93,13 @@ class LeftPanelWidget(QSplitter):
         super().__init__(Qt.Orientation.Vertical)
 
         self.metadata_view = QTextEdit()
+        self.metadata_view.setPlaceholderText("MP4 Metadata")
         self.metadata_view.setReadOnly(True)
+
+        metadata_container = QWidget()
+        metadata_layout = QVBoxLayout(metadata_container)
+        metadata_layout.setContentsMargins(0, 0, 0, 0)
+        metadata_layout.addWidget(self.metadata_view)
 
         self.boxes_tree = QTreeWidget()
         self.boxes_tree.setHeaderLabels(["Box", "Details"])
@@ -122,7 +129,7 @@ class LeftPanelWidget(QSplitter):
         self.log_box.setReadOnly(True)
         self.log_box.setPlaceholderText("Log Messages")
 
-        self.addWidget(self.metadata_view)
+        self.addWidget(metadata_container)
         self.addWidget(self.boxes_tree)
         self.addWidget(self.log_box)
         self.addWidget(playback_control_widget)
@@ -131,7 +138,18 @@ class LeftPanelWidget(QSplitter):
 
     def update_metadata(self, metadata_text: str):
         """Display formatted metadata text."""
-        self.metadata_view.setPlainText(metadata_text)
+        lines = metadata_text.splitlines()
+        html_lines: List[str] = []
+        for line in lines:
+            stripped = line.strip()
+            if stripped == "Video track(s) info":
+                html_lines.append("<b>Video track(s) info:</b>")
+            elif stripped == "Audio track(s) info":
+                html_lines.append("<b>Audio track(s) info:</b>")
+            else:
+                html_lines.append(html.escape(line))
+        html_content = "<pre style='margin:0'>{}</pre>".format("\n".join(html_lines))
+        self.metadata_view.setHtml(html_content)
 
     def update_boxes(self, boxes: List[MP4Box]):
         """Populate the boxes tree from parsed MP4 boxes."""

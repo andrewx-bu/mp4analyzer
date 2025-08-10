@@ -88,14 +88,11 @@ def _output_stdout(
     title = f"MP4 Analysis: {Path(file_path).name}"
     print(title.center(60))
     print("=" * 60)
-    print()
 
     # Movie info
     movie_lines = movie_info.splitlines()
-    if movie_lines:
-        print(movie_lines[0].center(60))
-        for line in movie_lines[1:]:
-            print(line)
+    for line in movie_lines:
+        print(line)
     print()
 
     # Box structure
@@ -112,8 +109,6 @@ def _output_stdout(
             print(line)
 
         # Add spacing between top-level boxes
-        if i < len(boxes) - 1:
-            print()
 
 
 def _output_summary(file_path: str, boxes) -> None:

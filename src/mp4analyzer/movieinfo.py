@@ -181,7 +181,7 @@ def generate_movie_info(file_path: str, boxes: List[MP4Box]) -> str:
         info_pairs.append(("Modified", "Same as creation time"))
 
     key_width = max(len(k) for k, _ in info_pairs)
-    lines: List[str] = ["Movie Info"]
+    lines: List[str] = []
     lines.extend(f"{k.ljust(key_width)}  {v}" for k, v in info_pairs)
 
     video_streams = [s for s in streams if s.get("codec_type") == "video"]
@@ -227,7 +227,6 @@ def generate_movie_info(file_path: str, boxes: List[MP4Box]) -> str:
                 ]
             )
         lines.extend(_format_table(headers, rows))
-        lines.append("")
 
     audio_streams = [s for s in streams if s.get("codec_type") == "audio"]
     if audio_streams:

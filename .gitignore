@@ -1,3 +1,5 @@
 __pycache__/
+.pytest_cache/
 .venv/
+mp4analyzer.egg-info/
 *.mp4

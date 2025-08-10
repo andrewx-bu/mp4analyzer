@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mp4analyzer"
+version = "0.1.0"
+description = "Lightweight MP4 box analyzer"
+authors = [
+    {name = "Andrew Xin", email = "andrewx@bu.edu"}
+]
+requires-python = ">=3.8"
+dependencies = []
+
+[project.scripts]
+mp4analyzer = "mp4analyzer.cli:main"
+
+[project.optional-dependencies]
+dev = ["pytest", "black", "flake8"]

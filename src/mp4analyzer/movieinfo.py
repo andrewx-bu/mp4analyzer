@@ -59,6 +59,20 @@ def _format_duration(seconds: float) -> str:
     return f"{hours}:{minutes:02}:{secs:06.3f}"
 
 
+def _format_table(headers: List[str], rows: List[List[object]]) -> List[str]:
+    """Format a table with columns aligned under their headers."""
+    str_rows = [[str(cell) for cell in row] for row in rows]
+    widths = [len(h) for h in headers]
+    for row in str_rows:
+        for i, cell in enumerate(row):
+            widths[i] = max(widths[i], len(cell))
+
+    lines = ["  ".join(h.ljust(widths[i]) for i, h in enumerate(headers))]
+    for row in str_rows:
+        lines.append("  ".join(row[i].ljust(widths[i]) for i in range(len(headers))))
+    return lines
+
+
 def generate_movie_info(file_path: str, boxes: List[MP4Box]) -> str:
     """Generate detailed movie information text from ffprobe and MP4 boxes."""
     data = _run_ffprobe(
@@ -161,9 +175,18 @@ def generate_movie_info(file_path: str, boxes: List[MP4Box]) -> str:
     video_streams = [s for s in streams if s.get("codec_type") == "video"]
     if video_streams:
         lines.append("Video track(s) info")
-        lines.append(
-            "ID\tDuration\tTimescale\tSamples\tBitrate (kbps)\tCodec\tLanguage\tWidth\tHeight"
-        )
+        headers = [
+            "ID",
+            "Duration",
+            "Timescale",
+            "Samples",
+            "Bitrate (kbps)",
+            "Codec",
+            "Language",
+            "Width",
+            "Height",
+        ]
+        rows: List[List[object]] = []
         for s in video_streams:
             track_id = int(s.get("id", "0"), 0) if s.get("id") else s.get("index", 0)
             time_base = s.get("time_base", "1/1")
@@ -178,17 +201,37 @@ def generate_movie_info(file_path: str, boxes: List[MP4Box]) -> str:
             lang = s.get("tags", {}).get("language", "und")
             width = s.get("width", 0)
             height = s.get("height", 0)
-            lines.append(
-                f"{track_id}\t{dur_units}\t{track_timescale}\t{samples}\t{bitrate_k}\t{codec}\t{lang}\t{width}\t{height}"
+            rows.append(
+                [
+                    track_id,
+                    dur_units,
+                    track_timescale,
+                    samples,
+                    bitrate_k,
+                    codec,
+                    lang,
+                    width,
+                    height,
+                ]
             )
+        lines.extend(_format_table(headers, rows))
         lines.append("")
 
     audio_streams = [s for s in streams if s.get("codec_type") == "audio"]
     if audio_streams:
         lines.append("Audio track(s) info")
-        lines.append(
-            "ID\tDuration\tTimescale\tSamples\tBitrate (kbps)\tCodec\tLanguage\tSample Rate\tChannel Count"
-        )
+        headers = [
+            "ID",
+            "Duration",
+            "Timescale",
+            "Samples",
+            "Bitrate (kbps)",
+            "Codec",
+            "Language",
+            "Sample Rate",
+            "Channel Count",
+        ]
+        rows: List[List[object]] = []
         for s in audio_streams:
             track_id = int(s.get("id", "0"), 0) if s.get("id") else s.get("index", 0)
             time_base = s.get("time_base", "1/1")
@@ -203,8 +246,19 @@ def generate_movie_info(file_path: str, boxes: List[MP4Box]) -> str:
             lang = s.get("tags", {}).get("language", "und")
             sample_rate = s.get("sample_rate", "0")
             channels = s.get("channels", 0)
-            lines.append(
-                f"{track_id}\t{dur_units}\t{track_timescale}\t{samples}\t{bitrate_k}\t{codec}\t{lang}\t{sample_rate}\t{channels}"
+            rows.append(
+                [
+                    track_id,
+                    dur_units,
+                    track_timescale,
+                    samples,
+                    bitrate_k,
+                    codec,
+                    lang,
+                    sample_rate,
+                    channels,
+                ]
             )
+        lines.extend(_format_table(headers, rows))
 
     return "\n".join(lines)

@@ -94,7 +94,6 @@ def _parse_box(
         f.seek(payload_size, os.SEEK_CUR)
         return MediaDataBox(box_type, size, start_offset)
 
-
     children: List[MP4Box] = []
     data: bytes | None = None
 

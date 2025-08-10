@@ -258,9 +258,9 @@ def parse_frames(
                     size_bytes=0,
                     frame_type="?",
                     timestamp=t,
-                    pts=int(round(t * (tb_den / tb_num)))
-                    if tb_num != 0
-                    else 0,  # back-compute ticks from seconds
+                    pts=(
+                        int(round(t * (tb_den / tb_num))) if tb_num != 0 else 0
+                    ),  # back-compute ticks from seconds
                     decode_order=i,
                 )
             )

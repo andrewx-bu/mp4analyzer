@@ -57,8 +57,8 @@ class TrackBox(MP4Box):
                 for _ in range(entry_count):
                     if pos + 8 > len(d):
                         break
-                    count = struct.unpack(">I", d[pos:pos + 4])[0]
-                    delta = struct.unpack(">I", d[pos + 4:pos + 8])[0]
+                    count = struct.unpack(">I", d[pos : pos + 4])[0]
+                    delta = struct.unpack(">I", d[pos + 4 : pos + 8])[0]
                     samples_duration += count * delta
                     pos += 8
 
@@ -77,7 +77,7 @@ class TrackBox(MP4Box):
                     for _ in range(sample_count):
                         if pos + 4 > len(d):
                             break
-                        samples_size += struct.unpack(">I", d[pos:pos + 4])[0]
+                        samples_size += struct.unpack(">I", d[pos : pos + 4])[0]
                         pos += 4
 
         # Gather sample group information from sgpd boxes

@@ -11,6 +11,8 @@ from .boxes import (
     TrackBox,
     FreeSpaceBox,
     MediaDataBox,
+    EditBox,
+    EditListBox,
 )
 
 
@@ -48,6 +50,8 @@ BOX_PARSERS: Dict[str, Type[MP4Box]] = {
     "moov": MovieBox,
     "trak": TrackBox,
     "free": FreeSpaceBox,
+    "edts": EditBox,
+    "elst": EditListBox,
 }
 
 # Box types for which raw payload data should be captured for later processing

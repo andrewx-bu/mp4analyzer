@@ -17,6 +17,8 @@ from parsemp4.boxes import (
     TrackHeaderBox,
     ObjectDescriptorBox,
     MovieBox,
+    EditBox,
+    EditListBox,
 )
 
 # ------------------------------------------------------------------------------
@@ -48,6 +50,30 @@ def test_box_properties():
         "size": 17820776,
         "box_name": "MediaDataBox",
         "start": 19069,
+    }
+
+    edts = EditBox("edts", 36, 290, [])
+    assert edts.properties() == {
+        "size": 36,
+        "box_name": "EditBox",
+        "start": 290,
+    }
+
+    elst_payload = (
+        b"\x00\x00\x00\x00"  # version/flags
+        + struct.pack(">I", 1)
+        + struct.pack(">I", 0)
+        + struct.pack(">i", 0)
+        + struct.pack(">h", 1)
+        + struct.pack(">h", 0)
+    )
+    elst = EditListBox.from_parsed("elst", 28, 298, elst_payload, [])
+    assert elst.properties() == {
+        "size": 28,
+        "flags": 0,
+        "version": 0,
+        "box_name": "EditListBox",
+        "start": 298,
     }
 
 

@@ -9,6 +9,9 @@ from .moov import MovieBox
 from .trak import TrackBox
 from .free import FreeSpaceBox
 from .mdat import MediaDataBox
+from .edts import EditBox
+from .elst import EditListBox
+
 
 __all__ = [
     "MP4Box",
@@ -20,4 +23,6 @@ __all__ = [
     "TrackBox",
     "FreeSpaceBox",
     "MediaDataBox",
+    "EditBox",
+    "EditListBox",
 ]

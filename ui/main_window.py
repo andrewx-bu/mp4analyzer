@@ -1,5 +1,5 @@
 # Main window for MP4 Analyzer application.
-from typing import Optional, List
+from typing import Optional
 from PyQt6.QtCore import Qt, QEvent
 from PyQt6.QtGui import QPixmap, QAction
 from PyQt6.QtWidgets import QMainWindow, QFileDialog, QMessageBox

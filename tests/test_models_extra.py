@@ -1,6 +1,5 @@
 import sys
 import types
-import pytest
 
 # Stub QImage to avoid PyQt6 dependency
 fake_qimage_cls = type("QImage", (), {})

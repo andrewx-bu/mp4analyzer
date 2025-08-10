@@ -1,6 +1,7 @@
 # UI component builders for MP4 Analyzer application.
 from typing import Callable, Tuple, List
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QBrush, QColor, QFont
 from PyQt6.QtWidgets import (
     QFrame,
     QTextEdit,
@@ -97,6 +98,12 @@ class LeftPanelWidget(QSplitter):
         self.boxes_tree = QTreeWidget()
         self.boxes_tree.setHeaderLabels(["Box", "Details"])
         self.boxes_tree.setTextElideMode(Qt.TextElideMode.ElideRight)
+
+        monospace_font = QFont("Courier New")
+        monospace_font.setStyleHint(QFont.StyleHint.Monospace)
+        self.metadata_tree.setFont(monospace_font)
+        self.boxes_tree.setFont(monospace_font)
+
         for tree in (self.metadata_tree, self.boxes_tree):
             tree.setStyleSheet(
                 """
@@ -106,7 +113,11 @@ class LeftPanelWidget(QSplitter):
                 QTreeView::item:last {
                     border-right: none;
                 }
-            """
+                QTreeView::item:selected {
+                    background: purple;
+                    color: white;
+                }
+                """
             )
 
         self.log_box = QTextEdit()
@@ -144,14 +155,26 @@ class LeftPanelWidget(QSplitter):
         """Populate the boxes tree from parsed MP4 boxes."""
         self.boxes_tree.clear()
 
-        def _add_box(parent: QTreeWidgetItem, box: MP4Box):
-            item = QTreeWidgetItem([box.type])
-            parent.addChild(item)
+        light_blue_brush = QBrush(QColor("#ADD8E6"))
 
-            # Display box properties as children
-            for key, value in box.properties().items():
-                prop_item = QTreeWidgetItem([key, str(value)])
-                item.addChild(prop_item)
+        def _add_box(parent: QTreeWidgetItem, box: MP4Box):
+            props = box.properties()
+            item = QTreeWidgetItem(parent)
+            item.setText(1, "")
+
+            box_name = props.get("box_name", "")
+            label_text = f"<span style='color:{"red"}'>{box.type}</span>"
+            if box_name:
+                label_text += f" <span style='color:gray'>({box_name})</span>"
+            label = QLabel(label_text)
+            label.setStyleSheet("background: transparent;")
+            label.setFont(self.boxes_tree.font())
+            self.boxes_tree.setItemWidget(item, 0, label)
+
+            for key, value in props.items():
+                prop_item = QTreeWidgetItem(item, [key, str(value)])
+                prop_item.setForeground(0, light_blue_brush)
+                prop_item.setForeground(1, light_blue_brush)
 
             # Recurse into child boxes
             for child in box.children:

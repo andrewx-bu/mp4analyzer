@@ -3,6 +3,7 @@ import sys
 import types
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+import pytest
 
 # Ensure the project root is on the Python path
 sys.path.append(str(Path(__file__).resolve().parents[1]))

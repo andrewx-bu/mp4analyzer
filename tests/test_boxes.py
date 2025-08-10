@@ -74,6 +74,15 @@ def test_box_properties():
         "version": 0,
         "box_name": "EditListBox",
         "start": 298,
+        "entry_count": 1,
+        "entries": [
+            {
+                "segment_duration": 0,
+                "media_time": 0,
+                "media_rate_integer": 1,
+                "media_rate_fraction": 0,
+            }
+        ],
     }
 
 

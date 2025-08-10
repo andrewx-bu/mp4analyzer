@@ -18,7 +18,7 @@ from PyQt6.QtWidgets import (
     QTreeWidget,
     QTreeWidgetItem,
 )
-from parsemp4 import MP4Box
+from src.mp4analyzer import MP4Box
 from ui.video_canvas import VideoDisplayCanvas
 from ui.timeline_widget import TimelineBarGraph
 

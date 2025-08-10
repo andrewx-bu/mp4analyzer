@@ -11,7 +11,7 @@ from ui.ui_components import (
     LeftPanelWidget,
     RightPanelWidget,
 )
-from parsemp4 import parse_mp4_boxes, generate_movie_info
+from src.mp4analyzer import parse_mp4_boxes, generate_movie_info
 
 
 class MP4AnalyzerMainWindow(QMainWindow):

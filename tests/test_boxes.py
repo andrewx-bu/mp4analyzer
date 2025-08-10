@@ -7,8 +7,8 @@ import pytest
 # Prefer packaging parsemp4 and removing this in CI.
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from parsemp4 import parse_mp4_boxes
-from parsemp4.boxes import (
+from src.mp4analyzer import parse_mp4_boxes
+from src.mp4analyzer.boxes import (
     FreeSpaceBox,
     MediaDataBox,
     FileTypeBox,

@@ -38,8 +38,10 @@ jobs:
       contents: write
     steps:
     - uses: actions/download-artifact@v4
+      with:
+        path: artifacts
     - uses: softprops/action-gh-release@v1
       with:
-        files: "**/*"
+        files: artifacts/**/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

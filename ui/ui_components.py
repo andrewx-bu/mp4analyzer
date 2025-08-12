@@ -163,7 +163,7 @@ class LeftPanelWidget(QSplitter):
             item.setText(1, "")
 
             box_name = props.get("box_name", "")
-            label_text = f"<span style='color:{"red"}'>{box.type}</span>"
+            label_text = f"<span style='color:red'>{box.type}</span>"
             if box_name:
                 label_text += f" <span style='color:gray'>({box_name})</span>"
             label = QLabel(label_text)

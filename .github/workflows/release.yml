@@ -1,0 +1,85 @@
+name: Build Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+      
+      - name: Build executable
+        run: python build.py
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: mp4analyzer-Windows
+          path: dist/mp4analzyer.exe
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+      
+      - name: Build executable
+        run: python build.py
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: mp4analzyer-macOS
+          path: dist/mp4analzyer
+
+  release:
+    needs: [build-windows, build-macos]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+      - name: Download Windows build
+        uses: actions/download-artifact@v3
+        with:
+          name: mp4analzyer-Windows
+          path: ./windows
+      
+      - name: Download macOS build
+        uses: actions/download-artifact@v3
+        with:
+          name: mp4analzyer-macOS
+          path: ./macos
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            windows/mp4analzyer.exe
+            macos/mp4analzyer
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

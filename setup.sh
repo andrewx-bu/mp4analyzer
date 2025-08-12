@@ -1,14 +1,13 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -e
 
-if [ ! -d ".venv" ]; then
-  echo "🐍 Creating virtual environment..."
-  python3 -m venv .venv
-fi
+echo "🐍 Ensuring virtual environment..."
+uv venv
+
+echo "📦 Installing dependencies from pyproject.toml..."
+uv sync --extra dev
 
 echo "⚙️ Activating virtual environment..."
-source .venv/Scripts/activate
-
-echo "📦 Installing dependencies from requirements.txt..."
-pip install -r requirements.txt
+if [ -f ".venv/bin/activate" ]; then . .venv/bin/activate; else . .venv/Scripts/activate; fi
 
 echo "✅ Environment setup complete."

@@ -7,7 +7,7 @@ qtgui_module = types.SimpleNamespace(QImage=fake_qimage_cls)
 sys.modules.setdefault("PyQt6", types.SimpleNamespace(QtGui=qtgui_module))
 sys.modules.setdefault("PyQt6.QtGui", qtgui_module)
 
-from models import VideoMetadata, FrameData, LazyVideoFrameCollection # noqa: E402
+from models import VideoMetadata, FrameData, LazyVideoFrameCollection  # noqa: E402
 
 
 def _build_collection(frame_types):

@@ -2,8 +2,7 @@ name: Build Release
 
 on:
   push:
-    tags:
-      - "v*"
+    tags: ["v*"]
   workflow_dispatch:
 
 permissions:
@@ -12,21 +11,20 @@ permissions:
 jobs:
   build:
     strategy:
-      matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+      matrix: { os: [windows-latest, macos-latest, ubuntu-latest] }
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install dependencies
-        run: |
-          python -m pip install -U pip
-          pip install -r requirements.txt
-          pip install pyinstaller
+        with: { python-version: "3.11" }
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Install deps from pyproject (incl. dev)
+        run: uv sync --extra dev --frozen
+
       - name: Build executable
-        run: python build.py
+        run: uv run python build.py
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -42,21 +40,12 @@ jobs:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     steps:
-      - name: Download Windows artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: mp4analyzer-Windows
-          path: ./windows
-      - name: Download macOS artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: mp4analyzer-macOS
-          path: ./macos
-      - name: Download Linux artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: mp4analyzer-Linux
-          path: ./linux
+      - uses: actions/download-artifact@v4
+        with: { name: mp4analyzer-Windows, path: ./windows }
+      - uses: actions/download-artifact@v4
+        with: { name: mp4analyzer-macOS, path: ./macos }
+      - uses: actions/download-artifact@v4
+        with: { name: mp4analyzer-Linux, path: ./linux }
       - name: Zip assets
         run: |
           chmod +x macos/mp4analyzer || true

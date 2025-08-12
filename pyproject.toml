@@ -9,11 +9,36 @@ description = "Lightweight MP4 box analyzer"
 authors = [
     {name = "Andrew Xin", email = "andrewx@bu.edu"}
 ]
-requires-python = ">=3.8"
-dependencies = []
+requires-python = ">=3.11"
+dependencies = [
+    "numpy==2.3.1",
+    "pillow==11.3.0",
+    "PyQt6==6.9.1",
+    "PyQt6-Qt6==6.9.1",
+    "PyQt6_sip==13.10.2",
+]
 
 [project.scripts]
 mp4analyzer = "mp4analyzer.cli:main"
 
 [project.optional-dependencies]
-dev = ["pytest", "black", "flake8"]
+dev = [
+    "altgraph==0.17.4",
+    "black==25.1.0",
+    "click==8.2.1",
+    "colorama==0.4.6",
+    "iniconfig==2.1.0",
+    "mypy_extensions==1.1.0",
+    "packaging==25.0",
+    "pathspec==0.12.1",
+    "pefile==2023.2.7",
+    "platformdirs==4.3.8",
+    "pluggy==1.6.0",
+    "Pygments==2.19.2",
+    "pyinstaller==6.15.0",
+    "pyinstaller-hooks-contrib==2025.8",
+    "pytest==8.4.1",
+    "pywin32-ctypes==0.2.3",
+    "ruff==0.12.8",
+    "setuptools==80.9.0",
+]

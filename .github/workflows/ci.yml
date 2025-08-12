@@ -1,5 +1,5 @@
 name: CI
-on: push
+on: [push, pull_request]
 
 jobs:
   lint-test:
@@ -15,9 +15,7 @@ jobs:
         run: uv venv --python 3.11
 
       - name: Install dependencies
-        run: |
-          uv pip install -r requirements.txt -r requirements-dev.txt
-          uv pip install black ruff
+        run: uv sync --extra dev --frozen
 
       - name: Lint
         run: uv run ruff check .

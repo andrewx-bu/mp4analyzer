@@ -15,15 +15,14 @@ def build_exe():
     cmd = [
         'pyinstaller',
         '--onefile',
-        '--windowed',
         '--name', 'mp4analyzer',
-        '--add-data', f'src{os.pathsep}src',
+        '--paths', '.',
         'main.py'
     ]
     
     result = subprocess.run(cmd)
     if result.returncode == 0:
-        print("Build successful! Executable at: dist/mp4anlayzer.exe")
+        print("Build successful!")
     else:
         print("Build failed!")
         sys.exit(1)

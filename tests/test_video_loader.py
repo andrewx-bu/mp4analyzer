@@ -16,13 +16,13 @@ pyqt6.QtGui = qtgui
 sys.modules.setdefault("PyQt6", pyqt6)
 sys.modules.setdefault("PyQt6.QtGui", qtgui)
 
-from video_loader import (
+from video_loader import (  # noqa: E402
     extract_metadata,
     check_ffmpeg,
     VideoLoader,
     VideoLoaderError,
 )
-from models import VideoMetadata, FrameData
+from models import VideoMetadata, FrameData  # noqa: E402
 
 
 def test_extract_metadata_success():

@@ -124,7 +124,7 @@ class LazyVideoFrameCollection:
         try:
             shutil.rmtree(self._temp_dir, ignore_errors=True)
             self._temp_dir = tempfile.mkdtemp()
-        except:
+        except Exception:
             pass
 
     def set_log_callback(self, callback: Optional[Callable[[str], None]]):
@@ -198,7 +198,7 @@ class LazyVideoFrameCollection:
         end_timestamp = self._frame_timestamps[end_index]
         duration = end_timestamp - start_timestamp + (1.0 / 30.0)  # Add small buffer
 
-        temp_pattern = os.path.join(self._temp_dir, f"frame_%04d.png")
+        temp_pattern = os.path.join(self._temp_dir, "frame_%04d.png")
 
         try:
             cmd = [
@@ -230,7 +230,7 @@ class LazyVideoFrameCollection:
             cached_frames = []
             for i in range(start_index, end_index + 1):
                 frame_file = os.path.join(
-                    self._temp_dir, f"frame_{i-start_index+1:04d}.png"
+                    self._temp_dir, f"frame_{i - start_index + 1:04d}.png"
                 )
                 if os.path.exists(frame_file):
                     try:
@@ -323,5 +323,5 @@ class LazyVideoFrameCollection:
     def __del__(self):
         try:
             shutil.rmtree(self._temp_dir, ignore_errors=True)
-        except:
+        except Exception:
             pass

@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 sys.modules.setdefault("PyQt6", types.SimpleNamespace(QtGui=qtgui_module))
 sys.modules.setdefault("PyQt6.QtGui", qtgui_module)
 
-from models import FrameData, LazyVideoFrameCollection
+from models import FrameData, LazyVideoFrameCollection # noqa: E402
 
 
 @pytest.fixture

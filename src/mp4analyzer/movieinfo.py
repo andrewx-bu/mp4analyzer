@@ -114,14 +114,14 @@ def generate_movie_info(file_path: str, boxes: List[MP4Box]) -> str:
         codec = s.get("codec_tag_string") or s.get("codec_name", "")
         if codec:
             codecs.append(codec)
-    mime = f"video/mp4; codecs=\"{','.join(codecs)}\"" if codecs else "video/mp4"
+    mime = f'video/mp4; codecs="{",".join(codecs)}"' if codecs else "video/mp4"
 
     profiles = [major_brand] + compat_list if major_brand else compat_list
     mime_parts = ["video/mp4"]
     if codecs:
-        mime_parts.append(f"codecs=\"{','.join(codecs)}\"")
+        mime_parts.append(f'codecs="{",".join(codecs)}"')
     if profiles:
-        mime_parts.append(f"profiles=\"{','.join(profiles)}\"")
+        mime_parts.append(f'profiles="{",".join(profiles)}"')
     mime = "; ".join(mime_parts)
 
     fragmented = any(b.type in {"moof", "mvex"} for b in boxes)
@@ -149,7 +149,7 @@ def generate_movie_info(file_path: str, boxes: List[MP4Box]) -> str:
     info_pairs.append(
         (
             "File Size",
-            f"{file_size:,} bytes ({file_size / (1024*1024):.1f} MB)",
+            f"{file_size:,} bytes ({file_size / (1024 * 1024):.1f} MB)",
         )
     )
     info_pairs.append(("Bitrate", f"{bit_rate // 1000} kbps"))

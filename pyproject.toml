@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=61", "wheel", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "mp4analyzer"
-version = "0.1.0"
+dynamic = ["version"] 
 description = "Lightweight MP4 box analyzer"
 authors = [
     {name = "Andrew Xin", email = "andrewx@bu.edu"}
@@ -18,3 +18,6 @@ mp4analyzer = "mp4analyzer.cli:main"
 [project.optional-dependencies]
 gui = ["PyQt6>=6.9", "pillow>=11.3"]
 dev = ["ruff>=0.12", "black>=25.1", "pytest>=8.4", "pyinstaller>=6.15", "PyQt6>=6.9", "pillow>=11.3"]
+
+[tool.setuptools_scm]
+tag_regex = r"^v(?P<version>.*)$"

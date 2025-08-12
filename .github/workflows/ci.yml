@@ -1,7 +1,5 @@
 name: CI
-
-on:
-  push:
+on: push
 
 jobs:
   lint-test:
@@ -12,14 +10,20 @@ jobs:
         with:
           python-version: '3.11'
       - uses: astral-sh/setup-uv@v6
+
+      - name: Create venv
+        run: uv venv --python 3.11
+
       - name: Install dependencies
         run: |
-          uv pip install -r requirements.txt
-          uv pip install -r requirements-dev.txt
+          uv pip install -r requirements.txt -r requirements-dev.txt
           uv pip install black ruff
+
       - name: Lint
         run: uv run ruff check .
+
       - name: Check formatting
         run: uv run black --check .
+
       - name: Run tests
-        run: uv run pytest tests
+        run: uv run pytest -q

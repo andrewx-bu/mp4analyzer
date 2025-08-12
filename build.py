@@ -17,7 +17,6 @@ def build_exe():
         '--onefile',
         '--windowed',
         '--name', 'mp4analyzer',
-        '--icon', 'icon.ico' if os.path.exists('icon.ico') else 'NONE',
         '--add-data', f'src{os.pathsep}src',
         'main.py'
     ]

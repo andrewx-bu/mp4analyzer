@@ -14,6 +14,7 @@ from src.mp4analyzer.boxes import (
     FileTypeBox,
     TrackBox,
     MovieHeaderBox,
+    MediaHeaderBox,
     TrackHeaderBox,
     ObjectDescriptorBox,
     MovieBox,
@@ -127,6 +128,28 @@ def test_movie_header_box_properties():
         "volume": pytest.approx(1.0),
         "matrix": matrix,
         "next_track_id": 5,
+    }
+
+
+def test_media_header_box_properties():
+    payload = (
+        b"\x00\x00\x00\x00"
+        + struct.pack(">IIII", 3521783616, 3521783616, 30, 901)
+        + struct.pack(">HH", 21956, 0)
+    )
+    mdhd = MediaHeaderBox.from_parsed("mdhd", 32, 334, payload, [])
+    assert mdhd.properties() == {
+        "size": 32,
+        "flags": 0,
+        "version": 0,
+        "box_name": "MediaHeaderBox",
+        "start": 334,
+        "creation_time": 3521783616,
+        "modification_time": 3521783616,
+        "timescale": 30,
+        "duration": 901,
+        "language": 21956,
+        "languageString": "und",
     }
 
 

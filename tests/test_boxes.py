@@ -20,6 +20,8 @@ from src.mp4analyzer.boxes import (
     MovieBox,
     EditBox,
     EditListBox,
+    HandlerBox,
+    MediaInformationBox,
 )
 
 # ------------------------------------------------------------------------------
@@ -84,6 +86,31 @@ def test_box_properties():
                 "media_rate_fraction": 0,
             }
         ],
+    }
+
+    hdlr_payload = (
+        b"\x00\x00\x00\x00"  # version/flags
+        + b"\x00\x00\x00\x00"  # pre_defined
+        + b"vide"  # handler
+        + b"\x00" * 12  # reserved
+        + b"L-SMASH Video Handler\x00"
+    )
+    hdlr = HandlerBox.from_parsed("hdlr", 8 + len(hdlr_payload), 366, hdlr_payload, [])
+    assert hdlr.properties() == {
+        "size": 8 + len(hdlr_payload),
+        "flags": 0,
+        "version": 0,
+        "box_name": "HandlerBox",
+        "start": 366,
+        "handler": "vide",
+        "name": "L-SMASH Video Handler",
+    }
+
+    minf = MediaInformationBox.from_parsed("minf", 12292, 420, b"", [])
+    assert minf.properties() == {
+        "size": 12292,
+        "box_name": "MediaInformationBox",
+        "start": 420,
     }
 
 
@@ -307,6 +334,27 @@ def test_track_box_aggregation(tmp_path):
         "samples_size": 60,
         "sample_groups_info": [{"grouping_type": "roll", "entry_count": 2}],
     }
+
+
+def test_parse_handler_and_minf(tmp_path):
+    name = "L-SMASH Video Handler"
+    payload = (
+        b"\x00\x00\x00\x00"
+        + b"\x00\x00\x00\x00"
+        + b"vide"
+        + b"\x00" * 12
+        + name.encode("utf-8")
+        + b"\x00"
+    )
+    hdlr_box = mk_box(b"hdlr", payload)
+    minf_box = mk_box(b"minf", b"")
+    mp4_path = tmp_path / "boxes.mp4"
+    mp4_path.write_bytes(hdlr_box + minf_box)
+
+    boxes = parse_mp4_boxes(str(mp4_path))
+    assert [box.type for box in boxes] == ["hdlr", "minf"]
+    assert isinstance(boxes[0], HandlerBox)
+    assert isinstance(boxes[1], MediaInformationBox)
 
 
 # ------------------------------------------------------------------------------

@@ -14,6 +14,8 @@ from .boxes import (
     MediaDataBox,
     EditBox,
     EditListBox,
+    HandlerBox,
+    MediaInformationBox,
 )
 
 
@@ -54,10 +56,12 @@ BOX_PARSERS: Dict[str, Type[MP4Box]] = {
     "free": FreeSpaceBox,
     "edts": EditBox,
     "elst": EditListBox,
+    "hdlr": HandlerBox,
+    "minf": MediaInformationBox,
 }
 
 # Box types for which raw payload data should be captured for later processing
-RAW_DATA_BOX_TYPES = {"hdlr", "stsd", "stts", "stsz", "sbgp", "sgpd"}
+RAW_DATA_BOX_TYPES = {"stsd", "stts", "stsz", "sbgp", "sgpd"}
 
 
 def _read_u64(f: BinaryIO) -> int:

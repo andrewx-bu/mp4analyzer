@@ -22,7 +22,7 @@ jobs:
       - uses: astral-sh/setup-uv@v6
 
       - name: Install deps from pyproject
-        run: uv sync --extra gui --frozen
+        run: uv sync --extra dev --frozen
 
       - name: Build executable
         run: uv run python build.py

@@ -12,6 +12,8 @@ from .free import FreeSpaceBox
 from .mdat import MediaDataBox
 from .edts import EditBox
 from .elst import EditListBox
+from .hdlr import HandlerBox
+from .minf import MediaInformationBox
 
 
 __all__ = [
@@ -27,4 +29,6 @@ __all__ = [
     "MediaDataBox",
     "EditBox",
     "EditListBox",
+    "HandlerBox",
+    "MediaInformationBox",
 ]

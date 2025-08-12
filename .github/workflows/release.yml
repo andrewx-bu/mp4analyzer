@@ -19,8 +19,8 @@ jobs:
         with: { python-version: "3.11" }
       - uses: astral-sh/setup-uv@v6
 
-      - name: Install deps from pyproject (incl. dev)
-        run: uv sync --extra dev --frozen
+      - name: Install deps from pyproject
+        run: uv sync --extra gui --frozen
 
       - name: Build executable
         run: uv run python build.py

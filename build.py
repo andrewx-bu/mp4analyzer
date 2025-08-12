@@ -23,9 +23,9 @@ def build_exe():
     
     result = subprocess.run(cmd)
     if result.returncode == 0:
-        print(f"\n✅ Build successful! Executable at: dist/mp4anlayzer.exe")
+        print("Build successful! Executable at: dist/mp4anlayzer.exe")
     else:
-        print("\n❌ Build failed!")
+        print("Build failed!")
         sys.exit(1)
 
 if __name__ == "__main__":

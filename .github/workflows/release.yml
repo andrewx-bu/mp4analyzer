@@ -3,83 +3,68 @@ name: Build Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
 
-jobs:
-  build-windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-      
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install pyinstaller
-      
-      - name: Build executable
-        run: python build.py
-      
-      - name: Upload artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: mp4analyzer-Windows
-          path: dist/mp4analzyer.exe
+permissions:
+  contents: write
 
-  build-macos:
-    runs-on: macos-latest
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
     steps:
-      - uses: actions/checkout@v3
-      
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-      
+          python-version: "3.11"
+
       - name: Install dependencies
         run: |
+          python -m pip install -U pip
           pip install -r requirements.txt
           pip install pyinstaller
-      
+
       - name: Build executable
         run: python build.py
-      
+
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: mp4analzyer-macOS
-          path: dist/mp4analzyer
+          name: mp4analyzer-${{ runner.os }}
+          path: |
+            dist/mp4analyzer.exe
+            dist/mp4analyzer
+          if-no-files-found: error
+          retention-days: 7
 
   release:
-    needs: [build-windows, build-macos]
+    needs: build
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
-    
+
     steps:
-      - name: Download Windows build
-        uses: actions/download-artifact@v3
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
         with:
-          name: mp4analzyer-Windows
+          name: mp4analyzer-Windows
           path: ./windows
-      
-      - name: Download macOS build
-        uses: actions/download-artifact@v3
+
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v4
         with:
-          name: mp4analzyer-macOS
+          name: mp4analyzer-macOS
           path: ./macos
-      
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
           files: |
-            windows/mp4analzyer.exe
-            macos/mp4analzyer
+            windows/mp4analyzer.exe
+            macos/mp4analyzer
           draft: false
           prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

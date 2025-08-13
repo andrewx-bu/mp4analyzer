@@ -25,7 +25,7 @@ jobs:
         run: uv sync --extra dev --frozen
 
       - name: Build executable
-        run: uv run python build.py
+        run: uv run python build_exe.py
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

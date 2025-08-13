@@ -6,11 +6,9 @@ build-backend = "setuptools.build_meta"
 name = "mp4analyzer"
 description = "Lightweight MP4 box analyzer"
 readme = "README.md"
-license = { text = "MIT License" }
-dynamic = ["version"] 
-authors = [
-    {name = "Andrew Xin", email = "andrewx@bu.edu"}
-]
+license = "MIT"
+dynamic = ["version"]
+authors = [{ name = "Andrew Xin", email = "andrewx@bu.edu" }]
 requires-python = ">=3.11"
 dependencies = []
 
@@ -20,3 +18,13 @@ mp4analyzer = "mp4analyzer.cli:main"
 [project.optional-dependencies]
 gui = ["PyQt6>=6.9", "pillow>=11.3"]
 dev = ["ruff>=0.12", "black>=25.1", "pytest>=8.4", "pyinstaller>=6.15", "PyQt6>=6.9", "pillow>=11.3"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools_scm]
+tag_regex = "^v(?P<version>\\d+\\.\\d+\\.\\d+(?:[.-].*)?)$"
+write_to = "src/mp4analyzer/_version.py"

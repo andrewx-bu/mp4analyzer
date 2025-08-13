@@ -2,8 +2,11 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .venv/
+.venv-test/
 mp4analyzer.egg-info/
 *.mp4
 build/
 dist/
 *.spec
+.env
+_version.py

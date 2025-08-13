@@ -31,7 +31,7 @@ jobs:
           password: ${{ secrets.TEST_PYPI_TOKEN }}
 
       - name: Publish to PyPI (final)
-        if: !contains(github.ref_name, '-rc') && !contains(github.ref_name, '-a') && !contains(github.ref_name, '-b')
+        if: ${{ !contains(github.ref_name, '-rc') && !contains(github.ref_name, '-a') && !contains(github.ref_name, '-b') }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_TOKEN }}

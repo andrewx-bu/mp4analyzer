@@ -6,13 +6,12 @@ build-backend = "setuptools.build_meta"
 name = "mp4analyzer"
 description = "Lightweight MP4 box analyzer"
 readme = "README.md"
-license = "MIT"
+license = { file = "LICENSE" } 
 dynamic = ["version"]
 authors = [{ name = "Andrew Xin", email = "andrewx@bu.edu" }]
 requires-python = ">=3.11"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Topic :: Multimedia :: Video",
 ]

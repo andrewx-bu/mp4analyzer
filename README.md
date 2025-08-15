@@ -2,6 +2,10 @@
 
 Tool for analyzing MP4 files, providing both command-line box parsing and GUI-based frame-level analysis.
 
+| CLI | GUI |
+| --- | --- |
+| <img src="images/cli.png" width="400" alt="CLI"> | <img src="images/gui.png" width="800" alt="GUI"> |
+
 ## Features
 
 ### CLI Tool
@@ -11,11 +15,10 @@ Tool for analyzing MP4 files, providing both command-line box parsing and GUI-ba
 
 ### GUI Application
 - Frame-by-frame video analysis with timeline visualization
-- Interactive playback controls and frame navigation
-- Visual frame size/type analysis (I/P/B frames)
+- Per-frame details: type (I/P/B), byte size, timestamp, and decode vs presentation order
 - Requires FFmpeg for video decoding
 
-## Installation
+## Installation and Usage
 
 ### CLI Tool
 ```bash

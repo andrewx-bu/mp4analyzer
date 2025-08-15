@@ -1,15 +1,79 @@
 # MP4 Analyzer
 
-## Overview
-A desktop tool for inspecting MP4 containers that contain H.264 video streams.
+Tool for analyzing MP4 files, providing both command-line box parsing and GUI-based frame-level analysis.
 
-## Core Features So Far
-- **Box layout viewer** – displays the hierarchical MP4 box (atom) tree with each box's type, size, and file offset.
-- **Frame timeline** – renders a bar graph of frame sizes and types, and lets users step through and view decoded frames.
-- **Basic metadata panel** – shows summary information about the video using FFprobe.
+## Features
 
-## Goals
-1. Parse inner fields for more box types and show detailed metadata
-2. Enhance frame timeline with PTS, decode order, and reference frames when hovering over bars
-3. Improve decoding performance or move heavy operations to a C++ module using libav?
-4. **Stretch goal:** overlay macroblocks and motion vectors on the video view.
+### CLI Tool
+- Parse and display MP4 box structure
+- Extract metadata and technical information (e.g. duration, bitrate, codec info, track details)
+- Supports output to JSON
+
+### GUI Application
+- Frame-by-frame video analysis with timeline visualization
+- Interactive playback controls and frame navigation
+- Visual frame size/type analysis (I/P/B frames)
+- Requires FFmpeg for video decoding
+
+## Installation
+
+### CLI Tool
+```bash
+pip install mp4analyzer
+```
+
+### GUI Application
+Download from [Releases](https://github.com/andrewx-bu/mp4analyzer/releases).
+
+## Usage
+
+### CLI Help
+```
+usage: mp4analyzer [-h] [-o {stdout,json}] [-d] [-s] [-j JSON_PATH] file
+
+Analyze MP4 files and display metadata information
+
+positional arguments:
+  file                  MP4 file to analyze
+
+options:
+  -h, --help            show this help message and exit
+  -o {stdout,json}, --output {stdout,json}
+                        Output format (default: stdout)
+  -d, --detailed        Show detailed box properties and internal fields
+  -s, --summary         Show concise summary instead of full analysis
+  -j JSON_PATH, --json-path JSON_PATH
+                        Path to save JSON output. If specified, JSON will be saved even if output format is not json
+
+Examples:
+  mp4analyzer video.mp4                    # Basic analysis
+  mp4analyzer -d video.mp4                 # Detailed view with box properties
+  mp4analyzer -s video.mp4                 # Quick summary
+  mp4analyzer -o json video.mp4            # JSON output
+  mp4analyzer -j output.json video.mp4     # Save JSON to file
+```
+
+### GUI
+Download and run the executable from GitHub releases. The application will not run without FFmpeg.
+
+## Supported MP4 Boxes
+
+Currently parsed box types: `ftyp`, `mvhd`, `tkhd`, `mdhd`, `iods`, `moov`, `trak`, `free`, `mdat`, `edts`, `elst`, `hdlr`, `minf`
+
+Additional containers and leaf boxes are recognized but not fully parsed yet.
+
+## Development
+
+```bash
+# Setup
+uv sync --extra dev
+
+# Run tests
+uv run pytest
+
+# Build GUI app
+uv run python build_exe.py
+
+# Build CLI package
+uv build
+```

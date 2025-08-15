@@ -25,11 +25,6 @@ Tool for analyzing MP4 files, providing both command-line box parsing and GUI-ba
 pip install mp4analyzer
 ```
 
-### GUI Application
-Download from [Releases](https://github.com/andrewx-bu/mp4analyzer/releases).
-
-## Usage
-
 ### CLI Help
 ```
 usage: mp4analyzer [-h] [-o {stdout,json}] [-d] [-s] [-j JSON_PATH] file
@@ -56,8 +51,8 @@ Examples:
   mp4analyzer -j output.json video.mp4     # Save JSON to file
 ```
 
-### GUI
-Download and run the executable from GitHub releases. The application will not run without FFmpeg.
+### GUI Application
+Download and run the executable from GitHub [Releases](https://github.com/andrewx-bu/mp4analyzer/releases). The application will not run without FFmpeg.
 
 ## Supported MP4 Boxes
 

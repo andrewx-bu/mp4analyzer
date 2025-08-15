@@ -16,6 +16,8 @@ from .hdlr import HandlerBox
 from .minf import MediaInformationBox
 from .vmhd import VideoMediaHeaderBox
 from .dinf import DataInformationBox
+from .dref import DataReferenceBox
+from .url_ import DataEntryUrlBox
 
 
 __all__ = [
@@ -33,4 +35,8 @@ __all__ = [
     "EditListBox",
     "HandlerBox",
     "MediaInformationBox",
+    "VideoMediaHeaderBox",
+    "DataInformationBox",
+    "DataReferenceBox",
+    "DataEntryUrlBox",
 ]

@@ -18,6 +18,8 @@ from .boxes import (
     MediaInformationBox,
     VideoMediaHeaderBox,
     DataInformationBox,
+    DataReferenceBox,
+    DataEntryUrlBox,
 )
 
 
@@ -30,6 +32,7 @@ CONTAINER_BOX_TYPES = {
     "stbl",
     "edts",
     "dinf",
+    "dref",
     "mvex",
     "moof",
     "traf",
@@ -62,6 +65,8 @@ BOX_PARSERS: Dict[str, Type[MP4Box]] = {
     "minf": MediaInformationBox,
     "vmhd": VideoMediaHeaderBox,
     "dinf": DataInformationBox,
+    "dref": DataReferenceBox,
+    "url ": DataEntryUrlBox,
 }
 
 # Box types for which raw payload data should be captured for later processing
@@ -107,7 +112,18 @@ def _parse_box(
     children: List[MP4Box] = []
     data: bytes | None = None
 
-    if box_type in CONTAINER_BOX_TYPES and payload_size > 8:
+    if box_type == "dref":
+        # ``dref`` is a container FullBox with an entry count preceding its children
+        if payload_size >= 8:
+            data = f.read(8)
+        else:
+            data = f.read(payload_size)
+        while f.tell() < payload_end:
+            child = _parse_box(f, file_size, payload_end)
+            if not child:
+                break
+            children.append(child)
+    elif box_type in CONTAINER_BOX_TYPES and payload_size > 8:
         while f.tell() < payload_end:
             child = _parse_box(f, file_size, payload_end)
             if not child:

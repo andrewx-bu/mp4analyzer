@@ -24,6 +24,8 @@ from src.mp4analyzer.boxes import (
     MediaInformationBox,
     VideoMediaHeaderBox,
     DataInformationBox,
+    DataReferenceBox,
+    DataEntryUrlBox,
 )
 
 # ------------------------------------------------------------------------------
@@ -136,6 +138,26 @@ def test_box_properties():
         "size": 36,
         "box_name": "DataInformationBox",
         "start": 448,
+    }
+
+    dref_payload = b"\x00\x00\x00\x00" + struct.pack(">I", 1)
+    dref = DataReferenceBox.from_parsed("dref", 28, 456, dref_payload, [])
+    assert dref.properties() == {
+        "size": 28,
+        "flags": 0,
+        "version": 0,
+        "box_name": "DataReferenceBox",
+        "start": 456,
+    }
+
+    url_payload = b"\x00\x00\x00\x01"
+    url = DataEntryUrlBox.from_parsed("url ", 12, 472, url_payload, [])
+    assert url.properties() == {
+        "size": 12,
+        "flags": 1,
+        "version": 0,
+        "box_name": "DataEntryUrlBox",
+        "start": 472,
     }
 
 
@@ -385,7 +407,11 @@ def test_parse_handler_and_minf(tmp_path):
 def test_parse_vmhd_and_dinf(tmp_path):
     vmhd_payload = b"\x00\x00\x00\x01" + b"\x00\x00" + b"\x00\x00\x00\x00\x00\x00"
     vmhd_box = mk_box(b"vmhd", vmhd_payload)
-    dinf_box = mk_box(b"dinf", b"")
+    url_payload = b"\x00\x00\x00\x01"
+    url_box = mk_box(b"url ", url_payload)
+    dref_payload = b"\x00\x00\x00\x00" + struct.pack(">I", 1) + url_box
+    dref_box = mk_box(b"dref", dref_payload)
+    dinf_box = mk_box(b"dinf", dref_box)
     minf_box = mk_box(b"minf", vmhd_box + dinf_box)
 
     mp4_path = tmp_path / "vmhd_dinf.mp4"
@@ -398,6 +424,12 @@ def test_parse_vmhd_and_dinf(tmp_path):
     child_types = [type(c) for c in minf.children]
     assert VideoMediaHeaderBox in child_types
     assert DataInformationBox in child_types
+    dinf = next(c for c in minf.children if isinstance(c, DataInformationBox))
+    dref_types = [type(c) for c in dinf.children]
+    assert DataReferenceBox in dref_types
+    dref = next(c for c in dinf.children if isinstance(c, DataReferenceBox))
+    url_types = [type(c) for c in dref.children]
+    assert DataEntryUrlBox in url_types
 
 
 # ------------------------------------------------------------------------------

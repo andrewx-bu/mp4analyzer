@@ -14,6 +14,8 @@ from .edts import EditBox
 from .elst import EditListBox
 from .hdlr import HandlerBox
 from .minf import MediaInformationBox
+from .vmhd import VideoMediaHeaderBox
+from .dinf import DataInformationBox
 
 
 __all__ = [

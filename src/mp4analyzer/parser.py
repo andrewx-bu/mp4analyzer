@@ -16,6 +16,8 @@ from .boxes import (
     EditListBox,
     HandlerBox,
     MediaInformationBox,
+    VideoMediaHeaderBox,
+    DataInformationBox,
 )
 
 
@@ -58,6 +60,8 @@ BOX_PARSERS: Dict[str, Type[MP4Box]] = {
     "elst": EditListBox,
     "hdlr": HandlerBox,
     "minf": MediaInformationBox,
+    "vmhd": VideoMediaHeaderBox,
+    "dinf": DataInformationBox,
 }
 
 # Box types for which raw payload data should be captured for later processing

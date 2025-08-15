@@ -22,6 +22,8 @@ from src.mp4analyzer.boxes import (
     EditListBox,
     HandlerBox,
     MediaInformationBox,
+    VideoMediaHeaderBox,
+    DataInformationBox,
 )
 
 # ------------------------------------------------------------------------------
@@ -111,6 +113,29 @@ def test_box_properties():
         "size": 12292,
         "box_name": "MediaInformationBox",
         "start": 420,
+    }
+
+    vmhd_payload = (
+        b"\x00\x00\x00\x01"  # version/flags
+        + b"\x00\x00"  # graphicsmode
+        + b"\x00\x00\x00\x00\x00\x00"  # opcolor
+    )
+    vmhd = VideoMediaHeaderBox.from_parsed("vmhd", 20, 428, vmhd_payload, [])
+    assert vmhd.properties() == {
+        "size": 20,
+        "flags": 1,
+        "version": 0,
+        "box_name": "VideoMediaHeaderBox",
+        "start": 428,
+        "graphicsmode": 0,
+        "opcolor": [0, 0, 0],
+    }
+
+    dinf = DataInformationBox.from_parsed("dinf", 36, 448, b"", [])
+    assert dinf.properties() == {
+        "size": 36,
+        "box_name": "DataInformationBox",
+        "start": 448,
     }
 
 
@@ -355,6 +380,24 @@ def test_parse_handler_and_minf(tmp_path):
     assert [box.type for box in boxes] == ["hdlr", "minf"]
     assert isinstance(boxes[0], HandlerBox)
     assert isinstance(boxes[1], MediaInformationBox)
+
+
+def test_parse_vmhd_and_dinf(tmp_path):
+    vmhd_payload = b"\x00\x00\x00\x01" + b"\x00\x00" + b"\x00\x00\x00\x00\x00\x00"
+    vmhd_box = mk_box(b"vmhd", vmhd_payload)
+    dinf_box = mk_box(b"dinf", b"")
+    minf_box = mk_box(b"minf", vmhd_box + dinf_box)
+
+    mp4_path = tmp_path / "vmhd_dinf.mp4"
+    mp4_path.write_bytes(minf_box)
+
+    boxes = parse_mp4_boxes(str(mp4_path))
+    assert len(boxes) == 1
+    minf = boxes[0]
+    assert isinstance(minf, MediaInformationBox)
+    child_types = [type(c) for c in minf.children]
+    assert VideoMediaHeaderBox in child_types
+    assert DataInformationBox in child_types
 
 
 # ------------------------------------------------------------------------------

@@ -33,7 +33,7 @@ pip install mp4analyzer
 
 ### CLI Help
 ```
-usage: mp4analyzer [-h] [-o {stdout,json}] [-d] [-s] [-j JSON_PATH] file
+usage: mp4analyzer [-h] [-o {stdout,json}] [-d] [-s] [-e] [-c | --no-color] [-j JSON_PATH] file
 
 Analyze MP4 files and display metadata information
 
@@ -46,15 +46,21 @@ options:
                         Output format (default: stdout)
   -d, --detailed        Show detailed box properties and internal fields
   -s, --summary         Show concise summary instead of full analysis
+  -e, --expand          Expand all arrays and large data structures
+  -c, --color           Enable colored output (default: True)
+      --no-color        Disable colored output
   -j JSON_PATH, --json-path JSON_PATH
-                        Path to save JSON output. If specified, JSON will be saved even if output format is not json
+                        Path to save JSON output. If specified, JSON will be saved even if
+                        output format is not json.
 
 Examples:
-  mp4analyzer video.mp4                    # Basic analysis
+  mp4analyzer video.mp4                    # Basic analysis with color
   mp4analyzer -d video.mp4                 # Detailed view with box properties
   mp4analyzer -s video.mp4                 # Quick summary
-  mp4analyzer -o json video.mp4            # JSON output
-  mp4analyzer -j output.json video.mp4     # Save JSON to file
+  mp4analyzer -e -d video.mp4              # Expand arrays/matrices in details
+  mp4analyzer --no-color video.mp4         # Disable ANSI colors
+  mp4analyzer -o json video.mp4            # JSON to stdout
+  mp4analyzer -j output.json video.mp4     # Save JSON to file (in addition to stdout)
 ```
 
 ### GUI Application

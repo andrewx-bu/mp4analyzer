@@ -7,6 +7,8 @@ from io import BytesIO
 
 from .base import MP4Box
 from .avcc import AVCConfigurationBox
+from .colr import ColourInformationBox
+from .pasp import PixelAspectRatioBox
 
 
 @dataclass
@@ -65,6 +67,14 @@ class AVCSampleEntry(MP4Box):
             payload = stream.read(child_size - 8)
             if child_type_str == "avcC":
                 child = AVCConfigurationBox.from_parsed(
+                    child_type_str, child_size, child_offset_base + pos, payload, []
+                )
+            elif child_type_str == "colr":
+                child = ColourInformationBox.from_parsed(
+                    child_type_str, child_size, child_offset_base + pos, payload, []
+                )
+            elif child_type_str == "pasp":
+                child = PixelAspectRatioBox.from_parsed(
                     child_type_str, child_size, child_offset_base + pos, payload, []
                 )
             else:

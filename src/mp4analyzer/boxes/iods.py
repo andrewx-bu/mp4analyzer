@@ -2,6 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List, Dict
 from .base import MP4Box
+from ..utils import bytes_to_hex
 
 
 @dataclass
@@ -29,13 +30,11 @@ class ObjectDescriptorBox(MP4Box):
         )
 
     def properties(self) -> Dict[str, object]:
-        hexstr = self.descriptor.hex()
-        grouped = " ".join(hexstr[i : i + 8] for i in range(0, len(hexstr), 8))
         return {
             "size": self.size,
             "flags": self.flags,
             "version": self.version,
             "box_name": self.__class__.__name__,
             "start": self.offset,
-            "data": grouped,
+            "data": bytes_to_hex(self.descriptor),
         }

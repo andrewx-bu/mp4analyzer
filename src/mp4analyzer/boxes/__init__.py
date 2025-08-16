@@ -22,6 +22,8 @@ from .stbl import SampleTableBox
 from .stsd import SampleDescriptionBox
 from .avc1 import AVCSampleEntry
 from .avcc import AVCConfigurationBox
+from .colr import ColourInformationBox
+from .pasp import PixelAspectRatioBox
 
 
 __all__ = [
@@ -47,4 +49,6 @@ __all__ = [
     "SampleDescriptionBox",
     "AVCSampleEntry",
     "AVCConfigurationBox",
+    "ColourInformationBox",
+    "PixelAspectRatioBox",
 ]

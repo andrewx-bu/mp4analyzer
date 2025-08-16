@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import List, Dict
 
 from .base import MP4Box
+from ..utils import bytes_to_hex
 
 
 @dataclass
@@ -22,5 +23,5 @@ class FreeSpaceBox(MP4Box):
 
     def properties(self) -> Dict[str, object]:
         props = super().properties()
-        props["data"] = self.data or b""
+        props["data"] = bytes_to_hex(self.data)
         return props

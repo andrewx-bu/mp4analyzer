@@ -30,6 +30,8 @@ from src.mp4analyzer.boxes import (
     SampleDescriptionBox,
     AVCSampleEntry,
     AVCConfigurationBox,
+    ColourInformationBox,
+    PixelAspectRatioBox,
 )
 
 # ------------------------------------------------------------------------------
@@ -53,7 +55,7 @@ def test_box_properties():
         "size": 8,
         "box_name": "FreeSpaceBox",
         "start": 19061,
-        "data": b"",
+        "data": "",
     }
 
     mdat = MediaDataBox("mdat", 17820776, 19069)
@@ -195,6 +197,35 @@ def test_file_type_box_properties():
         "major_brand": "isom",
         "minor_version": 512,
         "compatible_brands": ["isom", "iso2"],
+    }
+
+
+def test_colour_information_box_properties():
+    payload = b"nclx" + struct.pack(">HHH", 1, 1, 1) + b"\x00"
+    colr = ColourInformationBox.from_parsed("colr", 8 + len(payload), 652, payload, [])
+    assert colr.properties() == {
+        "size": 8 + len(payload),
+        "box_name": "ColourInformationBox",
+        "start": 652,
+        "data": "6e636c78 00010001 000100",
+        "colour_type": "nclx",
+        "colour_primaries": 1,
+        "transfer_characteristics": 1,
+        "matrix_coefficients": 1,
+        "full_range_flag": 0,
+    }
+
+
+def test_pixel_aspect_ratio_box_properties():
+    payload = struct.pack(">II", 1, 1)
+    pasp = PixelAspectRatioBox.from_parsed("pasp", 16, 671, payload, [])
+    assert pasp.properties() == {
+        "size": 16,
+        "box_name": "PixelAspectRatioBox",
+        "start": 671,
+        "data": "00000001 00000001",
+        "hSpacing": 1,
+        "vSpacing": 1,
     }
 
 

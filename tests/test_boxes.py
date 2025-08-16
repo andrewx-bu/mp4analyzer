@@ -34,6 +34,8 @@ from src.mp4analyzer.boxes import (
     PixelAspectRatioBox,
     TimeToSampleBox,
     CompositionOffsetBox,
+    SyncSampleBox,
+    SampleDependencyTypeBox,
 )
 
 # ------------------------------------------------------------------------------
@@ -653,6 +655,56 @@ def test_composition_offset_box_properties(tmp_path):
         "start": 0,
         "sample_counts": [1, 2],
         "sample_offsets": [2, 5],
+    }
+
+
+def test_sync_sample_box_properties(tmp_path):
+    payload = (
+        b"\x00\x00\x00\x00"
+        + struct.pack(">I", 3)
+        + struct.pack(">I", 1)
+        + struct.pack(">I", 91)
+        + struct.pack(">I", 181)
+    )
+    stss_box = mk_box(b"stss", payload)
+    mp4_path = tmp_path / "stss.mp4"
+    mp4_path.write_bytes(stss_box)
+
+    boxes = parse_mp4_boxes(str(mp4_path))
+    assert len(boxes) == 1
+    stss = boxes[0]
+    assert isinstance(stss, SyncSampleBox)
+    assert stss.properties() == {
+        "size": 8 + len(payload),
+        "flags": 0,
+        "version": 0,
+        "box_name": "SyncSampleBox",
+        "start": 0,
+        "sample_numbers": [1, 91, 181],
+    }
+
+
+def test_sample_dependency_type_box_properties(tmp_path):
+    payload = b"\x00\x00\x00\x00" + bytes.fromhex("a6 96 96 9a")
+    sdtp_box = mk_box(b"sdtp", payload)
+    mp4_path = tmp_path / "sdtp.mp4"
+    mp4_path.write_bytes(sdtp_box)
+
+    boxes = parse_mp4_boxes(str(mp4_path))
+    assert len(boxes) == 1
+    sdtp = boxes[0]
+    assert isinstance(sdtp, SampleDependencyTypeBox)
+    assert sdtp.properties() == {
+        "size": 8 + len(payload),
+        "flags": 0,
+        "version": 0,
+        "box_name": "SampleDependencyTypeBox",
+        "start": 0,
+        "data": "a696969a",
+        "is_leading": [2, 2, 2, 2],
+        "sample_depends_on": [2, 1, 1, 1],
+        "sample_is_depended_on": [1, 1, 1, 2],
+        "sample_has_redundancy": [2, 2, 2, 2],
     }
 
 

@@ -28,6 +28,8 @@ from .boxes import (
     PixelAspectRatioBox,
     TimeToSampleBox,
     CompositionOffsetBox,
+    SyncSampleBox,
+    SampleDependencyTypeBox,
 )
 
 
@@ -83,6 +85,8 @@ BOX_PARSERS: Dict[str, Type[MP4Box]] = {
     "pasp": PixelAspectRatioBox,
     "stts": TimeToSampleBox,
     "ctts": CompositionOffsetBox,
+    "stss": SyncSampleBox,
+    "sdtp": SampleDependencyTypeBox,
 }
 
 # Box types for which raw payload data should be captured for later processing

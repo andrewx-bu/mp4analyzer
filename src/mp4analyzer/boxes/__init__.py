@@ -26,6 +26,8 @@ from .colr import ColourInformationBox
 from .pasp import PixelAspectRatioBox
 from .stts import TimeToSampleBox
 from .ctts import CompositionOffsetBox
+from .stss import SyncSampleBox
+from .sdtp import SampleDependencyTypeBox
 
 
 __all__ = [
@@ -55,4 +57,6 @@ __all__ = [
     "PixelAspectRatioBox",
     "TimeToSampleBox",
     "CompositionOffsetBox",
+    "SyncSampleBox",
+    "SampleDependencyTypeBox",
 ]

@@ -5,6 +5,7 @@ import struct
 
 from .base import MP4Box
 from .stts import TimeToSampleBox
+from .stsz import SampleSizeBox
 
 
 def _find_descendant(boxes: List[MP4Box], path: List[str]) -> MP4Box | None:
@@ -70,7 +71,12 @@ class TrackBox(MP4Box):
         # Calculate total sample size from stsz box
         samples_size = 0
         stsz = _find_descendant(children, ["mdia", "minf", "stbl", "stsz"])
-        if stsz and stsz.data:
+        if isinstance(stsz, SampleSizeBox):
+            if stsz.sample_size != 0:
+                samples_size = stsz.sample_size * stsz.sample_count
+            else:
+                samples_size = sum(stsz.sample_sizes or [])
+        elif stsz and stsz.data:
             d = stsz.data
             if len(d) >= 12:
                 sample_size = struct.unpack(">I", d[4:8])[0]

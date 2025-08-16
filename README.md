@@ -56,7 +56,7 @@ Download and run the executable from GitHub [Releases](https://github.com/andrew
 
 ## Supported MP4 Boxes
 
-Currently parsed box types: `ftyp`, `mvhd`, `tkhd`, `mdhd`, `iods`, `moov`, `trak`, `free`, `mdat`, `edts`, `elst`, `hdlr`, `minf`
+Currently parsed box types: `ftyp`, `moov`, `trak`, `mdat`, `free`, `mvhd`, `tkhd`, `mdhd`, `iods`, `edts`, `elst`, `hdlr`, `minf`, `vmhd`, `dinf`, `dref`, `url `, `stbl`, `stsd`, `avc1`, `avcC`, `colr`, `pasp`, `stts`, `ctts`, `stss`, `sdtp`, `stsc`, `stsz`, `stco`
 
 Additional containers and leaf boxes are recognized but not fully parsed yet.
 

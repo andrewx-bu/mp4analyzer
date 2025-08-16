@@ -30,6 +30,9 @@ from .boxes import (
     CompositionOffsetBox,
     SyncSampleBox,
     SampleDependencyTypeBox,
+    SampleToChunkBox,
+    SampleSizeBox,
+    ChunkOffsetBox,
 )
 
 
@@ -87,10 +90,13 @@ BOX_PARSERS: Dict[str, Type[MP4Box]] = {
     "ctts": CompositionOffsetBox,
     "stss": SyncSampleBox,
     "sdtp": SampleDependencyTypeBox,
+    "stsc": SampleToChunkBox,
+    "stsz": SampleSizeBox,
+    "stco": ChunkOffsetBox,
 }
 
 # Box types for which raw payload data should be captured for later processing
-RAW_DATA_BOX_TYPES = {"stsd", "stts", "stsz", "sbgp", "sgpd"}
+RAW_DATA_BOX_TYPES = {"stsd", "stts", "sbgp", "sgpd"}
 
 
 def _read_u64(f: BinaryIO) -> int:

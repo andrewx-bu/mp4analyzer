@@ -36,6 +36,9 @@ from src.mp4analyzer.boxes import (
     CompositionOffsetBox,
     SyncSampleBox,
     SampleDependencyTypeBox,
+    SampleToChunkBox,
+    SampleSizeBox,
+    ChunkOffsetBox,
 )
 
 # ------------------------------------------------------------------------------
@@ -705,6 +708,88 @@ def test_sample_dependency_type_box_properties(tmp_path):
         "sample_depends_on": [2, 1, 1, 1],
         "sample_is_depended_on": [1, 1, 1, 2],
         "sample_has_redundancy": [2, 2, 2, 2],
+    }
+
+
+def test_sample_to_chunk_box_properties(tmp_path):
+    payload = (
+        b"\x00\x00\x00\x00"
+        + struct.pack(">I", 2)
+        + struct.pack(">III", 1, 31, 1)
+        + struct.pack(">III", 30, 2, 1)
+    )
+    stsc_box = mk_box(b"stsc", payload)
+    mp4_path = tmp_path / "stsc.mp4"
+    mp4_path.write_bytes(stsc_box)
+
+    boxes = parse_mp4_boxes(str(mp4_path))
+    assert len(boxes) == 1
+    stsc = boxes[0]
+    assert isinstance(stsc, SampleToChunkBox)
+    assert stsc.properties() == {
+        "size": 8 + len(payload),
+        "flags": 0,
+        "version": 0,
+        "box_name": "SampleToChunkBox",
+        "start": 0,
+        "first_chunk": [1, 30],
+        "samples_per_chunk": [31, 2],
+        "sample_description_index": [1, 1],
+    }
+
+
+def test_sample_size_box_properties(tmp_path):
+    payload = (
+        b"\x00\x00\x00\x00"
+        + struct.pack(">I", 0)
+        + struct.pack(">I", 3)
+        + struct.pack(">I", 10)
+        + struct.pack(">I", 20)
+        + struct.pack(">I", 30)
+    )
+    stsz_box = mk_box(b"stsz", payload)
+    mp4_path = tmp_path / "stsz.mp4"
+    mp4_path.write_bytes(stsz_box)
+
+    boxes = parse_mp4_boxes(str(mp4_path))
+    assert len(boxes) == 1
+    stsz = boxes[0]
+    assert isinstance(stsz, SampleSizeBox)
+    assert stsz.properties() == {
+        "size": 8 + len(payload),
+        "flags": 0,
+        "version": 0,
+        "box_name": "SampleSizeBox",
+        "start": 0,
+        "sample_sizes": [10, 20, 30],
+        "sample_size": 0,
+        "sample_count": 3,
+    }
+
+
+def test_chunk_offset_box_properties(tmp_path):
+    payload = (
+        b"\x00\x00\x00\x00"
+        + struct.pack(">I", 3)
+        + struct.pack(">I", 19077)
+        + struct.pack(">I", 741483)
+        + struct.pack(">I", 1235346)
+    )
+    stco_box = mk_box(b"stco", payload)
+    mp4_path = tmp_path / "stco.mp4"
+    mp4_path.write_bytes(stco_box)
+
+    boxes = parse_mp4_boxes(str(mp4_path))
+    assert len(boxes) == 1
+    stco = boxes[0]
+    assert isinstance(stco, ChunkOffsetBox)
+    assert stco.properties() == {
+        "size": 8 + len(payload),
+        "flags": 0,
+        "version": 0,
+        "box_name": "ChunkOffsetBox",
+        "start": 0,
+        "chunk_offsets": [19077, 741483, 1235346],
     }
 
 

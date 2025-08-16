@@ -28,6 +28,9 @@ from .stts import TimeToSampleBox
 from .ctts import CompositionOffsetBox
 from .stss import SyncSampleBox
 from .sdtp import SampleDependencyTypeBox
+from .stsc import SampleToChunkBox
+from .stsz import SampleSizeBox
+from .stco import ChunkOffsetBox
 
 
 __all__ = [
@@ -59,4 +62,7 @@ __all__ = [
     "CompositionOffsetBox",
     "SyncSampleBox",
     "SampleDependencyTypeBox",
+    "SampleToChunkBox",
+    "SampleSizeBox",
+    "ChunkOffsetBox",
 ]

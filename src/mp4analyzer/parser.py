@@ -40,8 +40,7 @@ from .boxes import (
     ElementaryStreamDescriptorBox,
 )
 
-
-# Common container box types that can contain child boxes
+# Box types that can contain children
 CONTAINER_BOX_TYPES = {
     "moov",
     "trak",
@@ -67,7 +66,7 @@ CONTAINER_BOX_TYPES = {
     "senc",
 }
 
-# Mapping of box type to specialised box class
+# Mapping of type → parser class
 BOX_PARSERS: Dict[str, Type[MP4Box]] = {
     "ftyp": FileTypeBox,
     "mvhd": MovieHeaderBox,
@@ -105,93 +104,77 @@ BOX_PARSERS: Dict[str, Type[MP4Box]] = {
     "sbgp": SampleToGroupBox,
 }
 
-# Box types for which raw payload data should be captured for later processing
+# Keep raw payloads for later
 RAW_DATA_BOX_TYPES = {"stsd", "stts", "sbgp", "sgpd"}
 
 
 def _read_u64(f: BinaryIO) -> int:
+    """Read big-endian uint64."""
     data = f.read(8)
     if len(data) != 8:
-        raise EOFError("Unexpected end of file")
+        raise EOFError("Unexpected EOF")
     return struct.unpack(">Q", data)[0]
 
 
 def _parse_box(
     f: BinaryIO, file_size: int, parent_end: int | None = None
 ) -> MP4Box | None:
-    start_offset = f.tell()
-    if parent_end is not None and start_offset >= parent_end:
+    """Parse one box from file."""
+    start = f.tell()
+    if parent_end and start >= parent_end:
         return None
 
     header = f.read(8)
     if len(header) < 8:
         return None
+    size, btype = struct.unpack(">I4s", header)
+    btype = btype.decode("ascii")
+    hdr_size = 8
 
-    size, box_type = struct.unpack(">I4s", header)
-    box_type = box_type.decode("ascii")
+    if size == 1:  # 64-bit size
+        size, hdr_size = _read_u64(f), 16
+    elif size == 0:  # extends to EOF/parent
+        size = (parent_end or file_size) - start
 
-    header_size = 8
-    if size == 1:  # 64-bit extended size
-        size = _read_u64(f)
-        header_size = 16
-    elif size == 0:
-        # box extends to end of file or parent
-        size = (parent_end if parent_end is not None else file_size) - start_offset
+    payload_size, end = size - hdr_size, start + size
 
-    payload_size = size - header_size
-    payload_end = start_offset + size
-
-    if box_type == "mdat":
+    if btype == "mdat":  # skip raw media data
         f.seek(payload_size, os.SEEK_CUR)
-        return MediaDataBox(box_type, size, start_offset)
+        return MediaDataBox(btype, size, start)
 
-    children: List[MP4Box] = []
-    data: bytes | None = None
-
-    if box_type in {"dref", "stsd"}:
-        # ``dref`` and ``stsd`` are container FullBoxes with an entry count
-        # preceding their child boxes
-        if payload_size >= 8:
-            data = f.read(8)
-        else:
-            data = f.read(payload_size)
-        while f.tell() < payload_end:
-            child = _parse_box(f, file_size, payload_end)
+    children, data = [], None
+    if btype in {"dref", "stsd"}:
+        data = f.read(min(8, payload_size))
+        while f.tell() < end:
+            child = _parse_box(f, file_size, end)
             if not child:
                 break
             children.append(child)
-    elif box_type in CONTAINER_BOX_TYPES and payload_size > 8:
-        while f.tell() < payload_end:
-            child = _parse_box(f, file_size, payload_end)
+    elif btype in CONTAINER_BOX_TYPES and payload_size > 8:
+        while f.tell() < end:
+            child = _parse_box(f, file_size, end)
             if not child:
                 break
             children.append(child)
     else:
-        if payload_size > 0 and (
-            box_type in BOX_PARSERS or box_type in RAW_DATA_BOX_TYPES
-        ):
+        if payload_size > 0 and (btype in BOX_PARSERS or btype in RAW_DATA_BOX_TYPES):
             data = f.read(payload_size)
         else:
             f.seek(payload_size, os.SEEK_CUR)
 
-    box_cls = BOX_PARSERS.get(box_type)
+    box_cls = BOX_PARSERS.get(btype)
     if box_cls:
-        # For parsed boxes we expect data to be present
-        parsed_box = box_cls.from_parsed(
-            box_type, size, start_offset, data or b"", children
-        )
-        return parsed_box
-
-    return MP4Box(box_type, size, start_offset, children, data)
+        return box_cls.from_parsed(btype, size, start, data or b"", children)
+    return MP4Box(btype, size, start, children, data)
 
 
 def parse_mp4_boxes(file_path: str) -> List[MP4Box]:
-    """Parse top-level MP4 boxes from a file."""
-    file_size = os.path.getsize(file_path)
+    """Parse all top-level boxes from an MP4 file."""
+    size = os.path.getsize(file_path)
     boxes: List[MP4Box] = []
     with open(file_path, "rb") as f:
-        while f.tell() < file_size:
-            box = _parse_box(f, file_size)
+        while f.tell() < size:
+            box = _parse_box(f, size)
             if not box:
                 break
             boxes.append(box)

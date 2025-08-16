@@ -23,12 +23,14 @@ from src.mp4analyzer.boxes import (
     HandlerBox,
     MediaInformationBox,
     VideoMediaHeaderBox,
+    SoundMediaHeaderBox,
     DataInformationBox,
     DataReferenceBox,
     DataEntryUrlBox,
     SampleTableBox,
     SampleDescriptionBox,
     AVCSampleEntry,
+    MP4AudioSampleEntry,
     AVCConfigurationBox,
     ColourInformationBox,
     PixelAspectRatioBox,
@@ -146,6 +148,21 @@ def test_box_properties():
         "start": 428,
         "graphicsmode": 0,
         "opcolor": [0, 0, 0],
+    }
+
+    smhd_payload = (
+        b"\x00\x00\x00\x00"  # version/flags
+        + b"\x00\x00"  # balance
+        + b"\x00\x00"  # reserved
+    )
+    smhd = SoundMediaHeaderBox.from_parsed("smhd", 16, 12950, smhd_payload, [])
+    assert smhd.properties() == {
+        "size": 16,
+        "flags": 0,
+        "version": 0,
+        "box_name": "SoundMediaHeaderBox",
+        "start": 12950,
+        "balance": 0,
     }
 
     dinf = DataInformationBox.from_parsed("dinf", 36, 448, b"", [])
@@ -437,6 +454,31 @@ def test_avc_sample_entry_properties():
         "compressorname": "AVC Coding",
         "depth": 0,
     }
+    mp4a_payload = (
+        b"\x00" * 6
+        + struct.pack(">H", 1)  # data_reference_index
+        + struct.pack(">H", 0)  # version
+        + b"\x00\x00"  # revision level
+        + b"\x00\x00\x00\x00"  # vendor
+        + struct.pack(">H", 2)  # channel_count
+        + struct.pack(">H", 16)  # samplesize
+        + b"\x00\x00"  # pre_defined
+        + b"\x00\x00"  # reserved
+        + struct.pack(">I", 48000 << 16)  # samplerate
+    )
+    mp4a = MP4AudioSampleEntry.from_parsed(
+        "mp4a", 8 + len(mp4a_payload), 13026, mp4a_payload, []
+    )
+    assert mp4a.properties() == {
+        "size": 8 + len(mp4a_payload),
+        "box_name": "MP4AudioSampleEntry",
+        "start": 13026,
+        "data_reference_index": 1,
+        "version": 0,
+        "channel_count": 2,
+        "samplesize": 16,
+        "samplerate": 48000,
+    }
 
 
 # ------------------------------------------------------------------------------
@@ -651,6 +693,7 @@ def test_parse_stsd_in_stbl(tmp_path):
     stsd = stbl.children[0]
     assert isinstance(stsd, SampleDescriptionBox)
     assert stsd.entry_count == 1
+    assert isinstance(stsd.children[0], MP4AudioSampleEntry)
 
 
 def test_time_to_sample_box_properties(tmp_path):

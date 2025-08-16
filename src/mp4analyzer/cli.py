@@ -5,6 +5,7 @@ import argparse
 import json
 import sys
 import os
+import textwrap
 from pathlib import Path
 from typing import Dict, Any, List
 
@@ -60,47 +61,74 @@ def _format_properties(
         if isinstance(value, list) and value:
             # Handle arrays (truncate or expand fully)
             if expand or len(value) <= 5:
-                value_str = ", ".join(map(str, value))
-                if len(value_str) > 80:  # wrap long lists
-                    lines.append(f"{prefix}{key_colored}: [")
-                    items = [str(x) for x in value]
-                    line = f"{prefix}    "
-                    for i, item in enumerate(items):
-                        if len(line + item) > 120:
-                            lines.append(line.rstrip(", ") + ",")
-                            line = f"{prefix}    {item}"
-                        else:
-                            line += f"{item}, " if i < len(items) - 1 else item
-                    lines.append(line + "]")
+                # If list contains nested structures, pretty-print using JSON
+                if any(isinstance(v, (list, dict)) for v in value):
+                    json_lines = json.dumps(value, indent=4).splitlines()
+                    lines.append(f"{prefix}{key_colored}: {json_lines[0]}")
+                    for json_line in json_lines[1:]:
+                        lines.append(f"{prefix}{json_line}")
                 else:
-                    lines.append(f"{prefix}{key_colored}: [{value_str}]")
+                    value_str = ", ".join(map(str, value))
+                    if len(value_str) > 80:  # wrap long lists
+                        lines.append(f"{prefix}{key_colored}: [")
+                        items = [f"{x}," for x in value]
+                        line = f"{prefix}    "
+                        for item in items:
+                            if len(line + item) > 120:
+                                lines.append(line.rstrip())
+                                line = f"{prefix}    {item} "
+                            else:
+                                line += f"{item} "
+                        lines.append(line.rstrip())
+                        lines.append(f"{prefix}]")
+                    else:
+                        lines.append(f"{prefix}{key_colored}: [{value_str}]")
             else:
                 lines.append(
                     f"{prefix}{key_colored}: "
                     f"[{', '.join(map(str, value[:5]))}...] ({len(value)} items)"
                 )
+        elif isinstance(value, dict):
+            json_lines = json.dumps(value, indent=4).splitlines()
+            lines.append(f"{prefix}{key_colored}: {json_lines[0]}")
+            for json_line in json_lines[1:]:
+                lines.append(f"{prefix}{json_line}")
         elif isinstance(value, bytes):
-            # Handle byte fields as hex
+            # Handle byte fields as hex grouped into 8-char chunks
             if expand or len(value) <= 16:
-                hex_str = value.hex() if value else "(empty)"
-                if len(hex_str) > 80:  # wrap hex output
-                    lines.append(f"{prefix}{key_colored}: ")
-                    for i in range(0, len(hex_str), 64):
-                        lines.append(f"{prefix}    {hex_str[i:i+64]}")
+                if not value:
+                    lines.append(f"{prefix}{key_colored}: (empty)")
                 else:
-                    lines.append(f"{prefix}{key_colored}: {hex_str}")
+                    hex_str = value.hex()
+                    groups = [hex_str[i:i+8] for i in range(0, len(hex_str), 8)]
+
+                    # Print first line with key
+                    first = " ".join(groups[:8])
+                    lines.append(f"{prefix}{key_colored}: {first}")
+
+                    # Continuation lines aligned to first hex value position
+                    cont_prefix = f"{prefix}{' ' * len(key)}  "
+
+                    # Remaining lines
+                    for i in range(8, len(groups), 8):
+                        chunk = " ".join(groups[i:i+8])
+                        lines.append(f"{cont_prefix}{chunk}")
             else:
+                preview = value[:16].hex()
+                groups = [preview[i:i+8] for i in range(0, len(preview), 8)]
                 lines.append(
-                    f"{prefix}{key_colored}: "
-                    f"{value[:16].hex()}... ({len(value)} bytes)"
+                    f"{prefix}{key_colored}: {' '.join(groups)}... ({len(value)} bytes)"
                 )
         else:
-            # Fallback: string conversion
+            # Fallback: string conversion, wrapping without breaking words
             display_value = str(value)
-            if len(display_value) > 80:  # wrap long strings
-                lines.append(f"{prefix}{key_colored}: ")
-                for i in range(0, len(display_value), 80):
-                    lines.append(f"{prefix}    {display_value[i:i+80]}")
+            if len(display_value) > 80:
+                wrapped = textwrap.wrap(
+                    display_value, width=80, break_long_words=False, break_on_hyphens=False
+                )
+                lines.append(f"{prefix}{key_colored}: {wrapped[0]}")
+                for segment in wrapped[1:]:
+                    lines.append(f"{prefix}    {segment}")
             else:
                 lines.append(f"{prefix}{key_colored}: {display_value}")
 
@@ -152,7 +180,7 @@ def _format_box_tree_visual(
                 prop_prefix = "".join("    " if last else "│   " for last in is_last)
                 prop_prefix += "    " if is_final else "│   "
                 for line in _format_properties(props, 0, use_color, expand):
-                    lines.append(f"{prop_prefix}{line.strip()}")
+                    lines.append(f"{prop_prefix}{line.rstrip()}")
 
         # Recurse into children
         if box.children:

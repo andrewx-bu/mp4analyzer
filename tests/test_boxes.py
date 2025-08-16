@@ -4,8 +4,6 @@ import struct
 from typing import Dict
 import pytest
 
-# Temporary: allow `pytest -q` from repo root without packaging the module.
-# Prefer packaging parsemp4 and removing this in CI.
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.mp4analyzer import parse_mp4_boxes

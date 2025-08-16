@@ -1,11 +1,15 @@
 # MP4 Analyzer
-https://github.com/andrewx-bu/mp4analyzer
+![CI](https://github.com/andrewx-bu/mp4analyzer/actions/workflows/ci.yml/badge.svg)
+![Release](https://github.com/andrewx-bu/mp4analyzer/actions/workflows/release.yml/badge.svg)
+![PyPI - Version](https://img.shields.io/pypi/v/mp4analyzer?label=PyPI&color=blue "https://pypi.org/project/mp4analyzer/")
+![Code style: black](https://img.shields.io/badge/code%20style-black-black "https://github.com/psf/black")
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg "https://opensource.org/licenses/MIT")
 
 Tool for analyzing MP4 files, providing both command-line box parsing and GUI-based frame-level analysis.
 
 | CLI | GUI |
 | --- | --- |
-| <img src="images/cli.png" width="400" alt="CLI"> | <img src="images/gui.png" width="800" alt="GUI"> |
+| <img src="https://github.com/andrewx-bu/mp4analyzer/blob/main/images/cli.png?" width="400" alt="CLI"> | <img src="https://github.com/andrewx-bu/mp4analyzer/blob/main/images/gui.png?" width="800" alt="GUI"> |
 
 ## Features
 
@@ -72,3 +76,6 @@ uv run python build_exe.py
 # Build CLI package
 uv build
 ```
+
+### Built With
+![Technologies](https://go-skill-icons.vercel.app/api/icons?i=python,pytest,qt,ffmpeg,githubactions,&perline=5&theme=dark)  

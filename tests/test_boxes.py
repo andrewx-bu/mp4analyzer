@@ -32,6 +32,7 @@ from src.mp4analyzer.boxes import (
     SampleTableBox,
     SampleDescriptionBox,
     AVCSampleEntry,
+    HEVCSampleEntry,
     MP4AudioSampleEntry,
     AVCConfigurationBox,
     ColourInformationBox,
@@ -491,6 +492,39 @@ def test_avc_sample_entry_properties():
         "frame_count": 1,
         "compressorname": "AVC Coding",
         "depth": 0,
+    }
+
+    comp_field = b"\x00" * 32
+    header = (
+        b"\x00" * 6
+        + struct.pack(">H", 1)
+        + b"\x00" * 16
+        + struct.pack(">H", 640)
+        + struct.pack(">H", 360)
+        + struct.pack(">I", 4718592)
+        + struct.pack(">I", 4718592)
+        + b"\x00" * 4
+        + struct.pack(">H", 1)
+        + comp_field
+        + struct.pack(">H", 24)
+        + b"\xff\xff"
+    )
+    hvcc_box = struct.pack(">I4s", 8, b"hvcC")
+    padding = b"\x00" * (275 - 8 - len(header) - len(hvcc_box))
+    hev1_payload = header + hvcc_box + padding
+    hev1 = HEVCSampleEntry.from_parsed("hev1", 275, 1264855, hev1_payload, [])
+    assert hev1.properties() == {
+        "size": 275,
+        "box_name": "HEVCSampleEntry",
+        "start": 1264855,
+        "data_reference_index": 1,
+        "width": 640,
+        "height": 360,
+        "horizresolution": 4718592,
+        "vertresolution": 4718592,
+        "frame_count": 1,
+        "compressorname": "",
+        "depth": 24,
     }
     mp4a_payload = (
         b"\x00" * 6

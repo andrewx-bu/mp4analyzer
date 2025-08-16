@@ -25,6 +25,7 @@ from .url_ import DataEntryUrlBox
 from .stbl import SampleTableBox
 from .stsd import SampleDescriptionBox
 from .avc1 import AVCSampleEntry
+from .hev1 import HEVCSampleEntry
 from .mp4a import MP4AudioSampleEntry
 from .avcc import AVCConfigurationBox
 from .colr import ColourInformationBox
@@ -67,6 +68,7 @@ __all__ = [
     "SampleTableBox",
     "SampleDescriptionBox",
     "AVCSampleEntry",
+    "HEVCSampleEntry",
     "MP4AudioSampleEntry",
     "AVCConfigurationBox",
     "ColourInformationBox",

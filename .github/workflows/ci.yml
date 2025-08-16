@@ -1,4 +1,4 @@
-name: lint-format-test
+name: CI
 on: [push, pull_request]
 
 jobs:

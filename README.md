@@ -1,7 +1,6 @@
 # MP4 Analyzer
 ![CI](https://github.com/andrewx-bu/mp4analyzer/actions/workflows/ci.yml/badge.svg)
 ![Release](https://github.com/andrewx-bu/mp4analyzer/actions/workflows/release.yml/badge.svg)
-![Publish PyPI](https://github.com/andrewx-bu/mp4analyzer/actions/workflows/publish-pypi.yml/badge.svg)
 ![PyPI - Version](https://img.shields.io/pypi/v/mp4analyzer?label=PyPI&color=blue "https://pypi.org/project/mp4analyzer/")
 ![Code style: black](https://img.shields.io/badge/code%20style-black-black "https://github.com/psf/black")
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg "https://opensource.org/licenses/MIT")

@@ -24,7 +24,7 @@ class MP4AnalyzerMainWindow(QMainWindow):
 
         # Application state
         self._video_metadata: Optional[VideoMetadata] = None
-        self._frame_collection = LazyVideoFrameCollection("", [], [])
+        self._frame_collection = LazyVideoFrameCollection("", [], [])  # empty init
         self._current_frame_index = 0
         self._zoom_factor = 1.0
         self._video_loader = VideoLoader()
@@ -35,17 +35,18 @@ class MP4AnalyzerMainWindow(QMainWindow):
         self._left_panel: Optional[LeftPanelWidget] = None
         self._right_panel: Optional[RightPanelWidget] = None
 
+        # Build interface
         self._setup_ui()
 
     def _setup_ui(self):
-        """Initialize the user interface."""
-        # Menu bar
+        """Initialize the main user interface: menu, panels, styling."""
+        # --- Menu bar ---
         file_menu = self.menuBar().addMenu("&File")
         open_action = QAction("Open MP4...", self)
         open_action.triggered.connect(self._handle_open_file)
         file_menu.addAction(open_action)
 
-        # Main layout
+        # --- Main layout (splitter + panels) ---
         main_splitter, playback_control, left_panel, right_panel = create_main_layout(
             on_open_file=self._handle_open_file,
             on_save_snapshot=self._handle_save_snapshot,
@@ -60,7 +61,7 @@ class MP4AnalyzerMainWindow(QMainWindow):
         self._right_panel = right_panel
         self.setCentralWidget(main_splitter)
 
-        # Navigation buttons
+        # --- Navigation buttons ---
         self._playback_control.previous_button.clicked.connect(
             lambda: self._navigate_frame(-1)
         )
@@ -68,11 +69,11 @@ class MP4AnalyzerMainWindow(QMainWindow):
             lambda: self._navigate_frame(1)
         )
 
-        # Event filters for zoom
+        # --- Zoom controls via mouse wheel ---
         self._right_panel.video_canvas.installEventFilter(self)
         self._right_panel.video_canvas.video_label.installEventFilter(self)
 
-        # Styling
+        # --- Dark styling ---
         self.setStyleSheet(
             """
             QFrame, QTextEdit, QLabel, QPushButton {
@@ -83,7 +84,7 @@ class MP4AnalyzerMainWindow(QMainWindow):
         )
 
     def _handle_open_file(self):
-        """Handle file open requests."""
+        """Prompt user to select a video file to load."""
         file_path, _ = QFileDialog.getOpenFileName(
             self, "Open MP4 File", "", "MP4 Files (*.mp4 *.mov);;All Files (*)"
         )
@@ -91,10 +92,11 @@ class MP4AnalyzerMainWindow(QMainWindow):
             self._load_video_file(file_path)
 
     def _load_video_file(self, file_path: str):
-        """Load and process a video file."""
+        """Load and parse a video file: metadata, frames, MP4 boxes."""
         try:
             self._log_message(f"Loading video file: {file_path}")
 
+            # Run FFmpeg-based loader
             metadata, frame_collection = self._video_loader.load_video_file(
                 file_path, log_callback=self._log_message
             )
@@ -108,12 +110,13 @@ class MP4AnalyzerMainWindow(QMainWindow):
                 )
                 return
 
+            # Save state
             self._video_metadata = metadata
             self._frame_collection = frame_collection
             self._current_frame_index = 0
             self._last_display_log_index = None
 
-            # Parse MP4 boxes and detailed metadata
+            # --- Parse MP4 boxes and metadata text ---
             try:
                 boxes = parse_mp4_boxes(file_path)
             except Exception as ex:
@@ -125,6 +128,7 @@ class MP4AnalyzerMainWindow(QMainWindow):
             except Exception as ex:
                 metadata_text = f"Failed to extract metadata: {ex}"
 
+            # Update UI panels with metadata and boxes
             self._left_panel.update_metadata(metadata_text)
             self._left_panel.update_boxes(boxes)
             self._playback_control.set_frame_range(frame_collection.count)
@@ -138,16 +142,18 @@ class MP4AnalyzerMainWindow(QMainWindow):
             )
 
         except VideoLoaderError as e:
+            # FFmpeg missing / failure
             self._log_message(f"❌ {str(e)}")
             QMessageBox.critical(self, "Video Loading Error", str(e))
         except Exception as e:
+            # Unexpected errors
             self._log_message(f"❌ Unexpected error: {str(e)}")
             QMessageBox.critical(
                 self, "Unexpected Error", f"An unexpected error occurred: {str(e)}"
             )
 
     def _handle_save_snapshot(self):
-        """Handle snapshot save requests."""
+        """Prompt user to save current video frame as PNG snapshot."""
         if self._frame_collection.is_empty:
             QMessageBox.warning(
                 self, "No Video Loaded", "Please load a video file first."
@@ -172,9 +178,11 @@ class MP4AnalyzerMainWindow(QMainWindow):
                 )
 
     def _handle_frame_changed(self, frame_index: int):
+        """Triggered when timeline slider is moved."""
         self._display_frame(frame_index)
 
     def _handle_frame_selected(self, frame_index: int):
+        """Triggered when a frame is selected on the timeline."""
         self._display_frame(frame_index)
         frame_meta = self._frame_collection.get_frame_metadata(frame_index)
         if frame_meta:
@@ -186,13 +194,15 @@ class MP4AnalyzerMainWindow(QMainWindow):
             )
 
     def _navigate_frame(self, offset: int):
+        """Move relative to current frame (prev/next)."""
         self._display_frame(self._current_frame_index + offset)
 
     def _display_frame(self, frame_index: int):
-        """Display a specific frame."""
+        """Decode and display a specific frame at given index."""
         if self._frame_collection.is_empty:
             return
 
+        # Clamp frame index
         valid_index = self._frame_collection.get_valid_index(frame_index)
         frame_meta = self._frame_collection.get_frame_metadata(valid_index)
         frame = self._frame_collection.get_frame(valid_index)
@@ -200,7 +210,7 @@ class MP4AnalyzerMainWindow(QMainWindow):
         if not frame:
             return
 
-        # Apply zoom and display
+        # --- Convert to QPixmap + apply zoom ---
         pixmap = QPixmap.fromImage(frame)
         if self._zoom_factor != 1.0:
             new_width = int(pixmap.width() * self._zoom_factor)
@@ -215,6 +225,7 @@ class MP4AnalyzerMainWindow(QMainWindow):
         self._right_panel.video_canvas.display_frame(pixmap)
         self._current_frame_index = valid_index
 
+        # Log once per displayed frame
         if self._last_display_log_index != valid_index:
             if frame_meta:
                 self._log_message(
@@ -224,7 +235,7 @@ class MP4AnalyzerMainWindow(QMainWindow):
                 self._log_message(f"➡️ Frame {valid_index}")
             self._last_display_log_index = valid_index
 
-        # Update UI
+        # Update UI widgets
         self._playback_control.set_current_frame(
             valid_index, self._frame_collection.count
         )
@@ -234,21 +245,25 @@ class MP4AnalyzerMainWindow(QMainWindow):
         )
 
     def _display_current_frame(self):
+        """Redisplay current frame index."""
         self._display_frame(self._current_frame_index)
 
     def _handle_zoom_changed(self, zoom_percent: int):
+        """Update zoom factor and redraw frame."""
         self._zoom_factor = zoom_percent / 100.0
         self._display_current_frame()
 
     def _handle_reset_zoom(self):
+        """Reset zoom back to 100%."""
         self._right_panel.control_bar.reset_zoom_value()
 
     def _log_message(self, message: str):
+        """Forward log messages to left panel."""
         if self._left_panel:
             self._left_panel.add_log_message(message)
 
     def eventFilter(self, source, event):
-        """Handle mouse wheel zoom."""
+        """Handle mouse wheel zooming on video canvas."""
         if event.type() == QEvent.Type.Wheel and source in (
             self._right_panel.video_canvas,
             self._right_panel.video_canvas.video_label,

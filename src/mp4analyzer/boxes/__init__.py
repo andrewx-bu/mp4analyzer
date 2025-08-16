@@ -18,6 +18,8 @@ from .vmhd import VideoMediaHeaderBox
 from .dinf import DataInformationBox
 from .dref import DataReferenceBox
 from .url_ import DataEntryUrlBox
+from .stbl import SampleTableBox
+from .stsd import SampleDescriptionBox
 
 
 __all__ = [
@@ -39,4 +41,6 @@ __all__ = [
     "DataInformationBox",
     "DataReferenceBox",
     "DataEntryUrlBox",
+    "SampleTableBox",
+    "SampleDescriptionBox",
 ]

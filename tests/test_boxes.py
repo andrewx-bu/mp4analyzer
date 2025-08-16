@@ -26,6 +26,8 @@ from src.mp4analyzer.boxes import (
     DataInformationBox,
     DataReferenceBox,
     DataEntryUrlBox,
+    SampleTableBox,
+    SampleDescriptionBox,
 )
 
 # ------------------------------------------------------------------------------
@@ -158,6 +160,26 @@ def test_box_properties():
         "version": 0,
         "box_name": "DataEntryUrlBox",
         "start": 472,
+    }
+
+    stbl = SampleTableBox("stbl", 12228, 484, [])
+    assert stbl.properties() == {
+        "size": 12228,
+        "box_name": "SampleTableBox",
+        "start": 484,
+    }
+
+    stsd_payload = b"\x00\x00\x00\x00" + struct.pack(">I", 1)
+    stsd = SampleDescriptionBox.from_parsed(
+        "stsd", 8 + len(stsd_payload), 492, stsd_payload, []
+    )
+    assert stsd.properties() == {
+        "size": 8 + len(stsd_payload),
+        "flags": 0,
+        "version": 0,
+        "entry_count": 1,
+        "box_name": "SampleDescriptionBox",
+        "start": 492,
     }
 
 
@@ -430,6 +452,26 @@ def test_parse_vmhd_and_dinf(tmp_path):
     dref = next(c for c in dinf.children if isinstance(c, DataReferenceBox))
     url_types = [type(c) for c in dref.children]
     assert DataEntryUrlBox in url_types
+
+
+def test_parse_stsd_in_stbl(tmp_path):
+    sample_entry = mk_box(b"mp4a", b"")
+    stsd_payload = b"\x00\x00\x00\x00" + struct.pack(">I", 1) + sample_entry
+    stsd_box = mk_box(b"stsd", stsd_payload)
+    stbl_box = mk_box(b"stbl", stsd_box)
+    mp4_path = tmp_path / "stsd.mp4"
+    mp4_path.write_bytes(stbl_box)
+
+    boxes = parse_mp4_boxes(str(mp4_path))
+    assert len(boxes) == 1
+    stbl = boxes[0]
+    assert isinstance(stbl, SampleTableBox)
+    assert len(stbl.children) == 1
+    stsd = stbl.children[0]
+    assert isinstance(stsd, SampleDescriptionBox)
+    assert stsd.entry_count == 1
+    assert len(stsd.children) == 1
+    assert stsd.children[0].type == "mp4a"
 
 
 # ------------------------------------------------------------------------------

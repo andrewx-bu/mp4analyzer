@@ -9,7 +9,7 @@ Tool for analyzing MP4 files, providing both command-line box parsing and GUI-ba
 
 | CLI | GUI |
 | --- | --- |
-| <img src="https://github.com/andrewx-bu/mp4analyzer/blob/main/images/cli.png?" width="400" alt="CLI"> | <img src="https://github.com/andrewx-bu/mp4analyzer/blob/main/images/gui.png?" width="800" alt="GUI"> |
+| <img src="https://github.com/andrewx-bu/mp4analyzer/blob/main/images/cli.png?raw=true" width="400" alt="CLI"> | <img src="https://github.com/andrewx-bu/mp4analyzer/blob/main/images/gui.png?raw=true" width="800" alt="GUI"> |
 
 ## Features
 
@@ -78,4 +78,4 @@ uv build
 ```
 
 ### Built With
-![Technologies](https://go-skill-icons.vercel.app/api/icons?i=python,pytest,qt,ffmpeg,githubactions,&perline=5&theme=dark)  
+![Technologies](https://go-skill-icons.vercel.app/api/icons?i=python,qt,ffmpeg,pytest,githubactions,&perline=5&theme=dark)

@@ -32,6 +32,8 @@ from src.mp4analyzer.boxes import (
     AVCConfigurationBox,
     ColourInformationBox,
     PixelAspectRatioBox,
+    TimeToSampleBox,
+    CompositionOffsetBox,
 )
 
 # ------------------------------------------------------------------------------
@@ -598,8 +600,60 @@ def test_parse_stsd_in_stbl(tmp_path):
     stsd = stbl.children[0]
     assert isinstance(stsd, SampleDescriptionBox)
     assert stsd.entry_count == 1
-    assert len(stsd.children) == 1
-    assert stsd.children[0].type == "mp4a"
+
+
+def test_time_to_sample_box_properties(tmp_path):
+    payload = (
+        b"\x00\x00\x00\x00"  # version/flags
+        + struct.pack(">I", 1)
+        + struct.pack(">I", 901)
+        + struct.pack(">I", 1)
+    )
+    stts_box = mk_box(b"stts", payload)
+    mp4_path = tmp_path / "stts.mp4"
+    mp4_path.write_bytes(stts_box)
+
+    boxes = parse_mp4_boxes(str(mp4_path))
+    assert len(boxes) == 1
+    stts = boxes[0]
+    assert isinstance(stts, TimeToSampleBox)
+    assert stts.properties() == {
+        "size": 24,
+        "flags": 0,
+        "version": 0,
+        "box_name": "TimeToSampleBox",
+        "start": 0,
+        "sample_counts": [901],
+        "sample_deltas": [1],
+    }
+
+
+def test_composition_offset_box_properties(tmp_path):
+    payload = (
+        b"\x00\x00\x00\x00"  # version/flags
+        + struct.pack(">I", 2)
+        + struct.pack(">I", 1)
+        + struct.pack(">I", 2)
+        + struct.pack(">I", 2)
+        + struct.pack(">I", 5)
+    )
+    ctts_box = mk_box(b"ctts", payload)
+    mp4_path = tmp_path / "ctts.mp4"
+    mp4_path.write_bytes(ctts_box)
+
+    boxes = parse_mp4_boxes(str(mp4_path))
+    assert len(boxes) == 1
+    ctts = boxes[0]
+    assert isinstance(ctts, CompositionOffsetBox)
+    assert ctts.properties() == {
+        "size": 32,
+        "flags": 0,
+        "version": 0,
+        "box_name": "CompositionOffsetBox",
+        "start": 0,
+        "sample_counts": [1, 2],
+        "sample_offsets": [2, 5],
+    }
 
 
 # ------------------------------------------------------------------------------

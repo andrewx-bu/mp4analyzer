@@ -24,6 +24,8 @@ from .avc1 import AVCSampleEntry
 from .avcc import AVCConfigurationBox
 from .colr import ColourInformationBox
 from .pasp import PixelAspectRatioBox
+from .stts import TimeToSampleBox
+from .ctts import CompositionOffsetBox
 
 
 __all__ = [
@@ -51,4 +53,6 @@ __all__ = [
     "AVCConfigurationBox",
     "ColourInformationBox",
     "PixelAspectRatioBox",
+    "TimeToSampleBox",
+    "CompositionOffsetBox",
 ]

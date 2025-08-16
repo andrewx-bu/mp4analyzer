@@ -4,6 +4,7 @@ from typing import Dict, List
 import struct
 
 from .base import MP4Box
+from .stts import TimeToSampleBox
 
 
 def _find_descendant(boxes: List[MP4Box], path: List[str]) -> MP4Box | None:
@@ -49,7 +50,11 @@ class TrackBox(MP4Box):
         # Calculate total sample duration from stts box
         samples_duration = 0
         stts = _find_descendant(children, ["mdia", "minf", "stbl", "stts"])
-        if stts and stts.data:
+        if isinstance(stts, TimeToSampleBox):
+            samples_duration = sum(
+                c * d for c, d in zip(stts.sample_counts, stts.sample_deltas)
+            )
+        elif stts and stts.data:
             d = stts.data
             if len(d) >= 8:
                 entry_count = struct.unpack(">I", d[4:8])[0]

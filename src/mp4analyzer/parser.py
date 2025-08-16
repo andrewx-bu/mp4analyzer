@@ -26,6 +26,8 @@ from .boxes import (
     AVCConfigurationBox,
     ColourInformationBox,
     PixelAspectRatioBox,
+    TimeToSampleBox,
+    CompositionOffsetBox,
 )
 
 
@@ -79,6 +81,8 @@ BOX_PARSERS: Dict[str, Type[MP4Box]] = {
     "avcC": AVCConfigurationBox,
     "colr": ColourInformationBox,
     "pasp": PixelAspectRatioBox,
+    "stts": TimeToSampleBox,
+    "ctts": CompositionOffsetBox,
 }
 
 # Box types for which raw payload data should be captured for later processing

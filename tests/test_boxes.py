@@ -22,6 +22,8 @@ from src.mp4analyzer.boxes import (
     EditListBox,
     HandlerBox,
     MediaInformationBox,
+    MediaBox,
+    MetaBox,
     VideoMediaHeaderBox,
     SoundMediaHeaderBox,
     DataInformationBox,
@@ -43,6 +45,7 @@ from src.mp4analyzer.boxes import (
     ChunkOffsetBox,
     SampleGroupDescriptionBox,
     SampleToGroupBox,
+    UserDataBox,
     ElementaryStreamDescriptorBox,
 )
 
@@ -211,6 +214,40 @@ def test_box_properties():
         "entry_count": 1,
         "box_name": "SampleDescriptionBox",
         "start": 492,
+    }
+
+    mdia = MediaBox.from_parsed("mdia", 4932, 1264682, b"", [])
+    assert mdia.properties() == {
+        "size": 4932,
+        "box_name": "MediaBox",
+        "start": 1264682,
+    }
+
+    udta = UserDataBox.from_parsed("udta", 97, 1269614, b"", [])
+    assert udta.properties() == {
+        "size": 97,
+        "box_name": "UserDataBox",
+        "start": 1269614,
+    }
+
+    meta_payload_hex = (
+        "00000021 68646c72 00000000 00000000 6d646972 6170706c "
+        "00000000 00000000 00000000 2c696c73 74000000 24a9746f "
+        "6f000000 1c646174 61000000 01000000 004c6176 6635392e "
+        "322e3130 31"
+    )
+    meta_payload = bytes.fromhex(meta_payload_hex.replace(" ", ""))
+    meta = MetaBox.from_parsed(
+        "meta", 89, 1269622, b"\x00\x00\x00\x00" + meta_payload, []
+    )
+    assert meta.properties() == {
+        "size": 89,
+        "flags": 0,
+        "version": 0,
+        "box_name": "MetaBox",
+        "isQT": False,
+        "start": 1269622,
+        "data": meta_payload_hex,
     }
 
 

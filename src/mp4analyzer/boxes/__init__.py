@@ -13,11 +13,14 @@ from .mdat import MediaDataBox
 from .edts import EditBox
 from .elst import EditListBox
 from .hdlr import HandlerBox
+from .mdia import MediaBox
 from .minf import MediaInformationBox
+from .meta import MetaBox
 from .vmhd import VideoMediaHeaderBox
 from .smhd import SoundMediaHeaderBox
 from .dinf import DataInformationBox
 from .dref import DataReferenceBox
+from .udta import UserDataBox
 from .url_ import DataEntryUrlBox
 from .stbl import SampleTableBox
 from .stsd import SampleDescriptionBox
@@ -52,11 +55,14 @@ __all__ = [
     "EditBox",
     "EditListBox",
     "HandlerBox",
+    "MediaBox",
     "MediaInformationBox",
+    "MetaBox",
     "VideoMediaHeaderBox",
     "SoundMediaHeaderBox",
     "DataInformationBox",
     "DataReferenceBox",
+    "UserDataBox",
     "DataEntryUrlBox",
     "SampleTableBox",
     "SampleDescriptionBox",

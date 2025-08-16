@@ -22,6 +22,8 @@ from .boxes import (
     DataEntryUrlBox,
     SampleTableBox,
     SampleDescriptionBox,
+    AVCSampleEntry,
+    AVCConfigurationBox,
 )
 
 
@@ -71,6 +73,8 @@ BOX_PARSERS: Dict[str, Type[MP4Box]] = {
     "url ": DataEntryUrlBox,
     "stbl": SampleTableBox,
     "stsd": SampleDescriptionBox,
+    "avc1": AVCSampleEntry,
+    "avcC": AVCConfigurationBox,
 }
 
 # Box types for which raw payload data should be captured for later processing

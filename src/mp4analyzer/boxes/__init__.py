@@ -20,6 +20,8 @@ from .dref import DataReferenceBox
 from .url_ import DataEntryUrlBox
 from .stbl import SampleTableBox
 from .stsd import SampleDescriptionBox
+from .avc1 import AVCSampleEntry
+from .avcc import AVCConfigurationBox
 
 
 __all__ = [
@@ -43,4 +45,6 @@ __all__ = [
     "DataEntryUrlBox",
     "SampleTableBox",
     "SampleDescriptionBox",
+    "AVCSampleEntry",
+    "AVCConfigurationBox",
 ]

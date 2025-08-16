@@ -28,6 +28,8 @@ from src.mp4analyzer.boxes import (
     DataEntryUrlBox,
     SampleTableBox,
     SampleDescriptionBox,
+    AVCSampleEntry,
+    AVCConfigurationBox,
 )
 
 # ------------------------------------------------------------------------------
@@ -299,6 +301,101 @@ def test_object_descriptor_box_properties():
         "box_name": "ObjectDescriptorBox",
         "start": 0,
         "data": "112233",
+    }
+
+
+def test_avc_configuration_box_properties():
+    avcc_payload = (
+        b"\x01"  # configurationVersion
+        + b"\x64"  # AVCProfileIndication
+        + b"\x00"  # profile_compatibility
+        + b"\x28"  # AVCLevelIndication
+        + b"\xff"  # lengthSizeMinusOne (6 bits reserved)
+        + b"\xe1"  # numOfSequenceParameterSets (3 bits reserved)
+        + struct.pack(">H", 30)  # SPS length
+        + bytes.fromhex(
+            "67640028acd940780227e5c05a808080a0000003002000000781e30632c0"
+        )  # SPS NALU
+        + b"\x01"  # numOfPictureParameterSets
+        + struct.pack(">H", 5)  # PPS length
+        + bytes.fromhex("68e93b2c8b")  # PPS NALU
+        + bytes([253, 248, 248, 0])  # ext
+    )
+    avcc = AVCConfigurationBox.from_parsed("avcC", 58, 594, avcc_payload, [])
+    assert avcc.properties() == {
+        "size": 58,
+        "box_name": "AVCConfigurationBox",
+        "start": 594,
+        "configurationVersion": 1,
+        "AVCProfileIndication": 100,
+        "profile_compatibility": 0,
+        "AVCLevelIndication": 40,
+        "lengthSizeMinusOne": 3,
+        "nb_SPS_nalus": 1,
+        "SPS": [
+            {
+                "length": 30,
+                "nalu_data": "0x"
+                "67640028acd940780227e5c05a808080a0000003002000000781e30632c0",
+            }
+        ],
+        "nb_PPS_nalus": 1,
+        "PPS": [
+            {"length": 5, "nalu_data": "0x68e93b2c8b"},
+        ],
+        "ext": [253, 248, 248, 0],
+    }
+
+
+def test_avc_sample_entry_properties():
+    avcc_payload = (
+        b"\x01"
+        + b"\x64"
+        + b"\x00"
+        + b"\x28"
+        + b"\xff"
+        + b"\xe1"
+        + struct.pack(">H", 30)
+        + bytes.fromhex("67640028acd940780227e5c05a808080a0000003002000000781e30632c0")
+        + b"\x01"
+        + struct.pack(">H", 5)
+        + bytes.fromhex("68e93b2c8b")
+        + bytes([253, 248, 248, 0])
+    )
+    avcc_box = mk_box(b"avcC", avcc_payload)
+
+    # Build the avc1 header (78 bytes) followed by avcC box and padding
+    name = b"AVC Coding"
+    compressor_field = bytes([len(name)]) + name + b"\x00" * (31 - len(name))
+    header = (
+        b"\x00" * 6
+        + struct.pack(">H", 1)  # data_reference_index
+        + b"\x00" * 16
+        + struct.pack(">H", 1920)
+        + struct.pack(">H", 1080)
+        + struct.pack(">I", 4718592)
+        + struct.pack(">I", 4718592)
+        + b"\x00" * 4
+        + struct.pack(">H", 1)  # frame_count
+        + compressor_field
+        + struct.pack(">H", 0)  # depth
+        + b"\xff\xff"  # pre_defined
+    )
+    padding = b"\x00" * 35
+    avc1_payload = header + avcc_box + padding
+    avc1 = AVCSampleEntry.from_parsed("avc1", 179, 508, avc1_payload, [])
+    assert avc1.properties() == {
+        "size": 179,
+        "box_name": "AVCSampleEntry",
+        "start": 508,
+        "data_reference_index": 1,
+        "width": 1920,
+        "height": 1080,
+        "horizresolution": 4718592,
+        "vertresolution": 4718592,
+        "frame_count": 1,
+        "compressorname": "AVC Coding",
+        "depth": 0,
     }
 
 

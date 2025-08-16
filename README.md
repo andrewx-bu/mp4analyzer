@@ -12,7 +12,7 @@ Tool for analyzing MP4 files, providing both command-line box parsing and GUI-ba
 ### CLI Tool
 - Parse and display MP4 box structure
 - Extract metadata and technical information (e.g. duration, bitrate, codec info, track details)
-- Supports output to JSON
+- Supports output to JSON. No external dependencies needed
 
 ### GUI Application
 - Frame-by-frame video analysis with timeline visualization
@@ -56,13 +56,9 @@ Examples:
 Download and run the executable from GitHub [Releases](https://github.com/andrewx-bu/mp4analyzer/releases). The application will not run without FFmpeg.
 
 ## Supported MP4 Boxes
-
-Currently parsed box types: `ftyp`, `moov`, `trak`, `mdat`, `free`, `mvhd`, `tkhd`, `mdhd`, `iods`, `edts`, `elst`, `hdlr`, `minf`, `vmhd`, `dinf`, `dref`, `url `, `stbl`, `stsd`, `avc1`, `avcC`, `colr`, `pasp`, `stts`, `ctts`, `stss`, `sdtp`, `stsc`, `stsz`, `stco`
-
-Additional containers and leaf boxes are recognized but not fully parsed yet.
+Currently parsed box types: `ftyp`, `moov`, `mvhd`, `trak`, `tkhd`, `mdhd`, `iods`, `edts`, `elst`, `hdlr`, `minf`, `vmhd`, `smhd`, `dinf`, `dref`, `url `, `stbl`, `stsd`, `avc1`, `avcC`, `colr`, `pasp`, `mp4a`, `esds`, `mdat`, `free`, `stts`, `ctts`, `stss`, `sdtp`, `stsc`, `stsz`, `stco`, `sgpd`, `sbgp`
 
 ## Development
-
 ```bash
 # Setup
 uv sync --extra dev

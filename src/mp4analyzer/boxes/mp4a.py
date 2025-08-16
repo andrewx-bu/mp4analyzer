@@ -6,6 +6,7 @@ from typing import Dict, List
 from io import BytesIO
 
 from .base import MP4Box
+from .esds import ElementaryStreamDescriptorBox
 
 
 @dataclass
@@ -49,9 +50,15 @@ class MP4AudioSampleEntry(MP4Box):
                 break
             child_type_str = child_type.decode("ascii")
             payload = stream.read(child_size - 8)
-            parsed_children.append(
-                MP4Box(child_type_str, child_size, child_offset_base + pos, [], payload)
-            )
+            if child_type_str == "esds":
+                child = ElementaryStreamDescriptorBox.from_parsed(
+                    child_type_str, child_size, child_offset_base + pos, payload, []
+                )
+            else:
+                child = MP4Box(
+                    child_type_str, child_size, child_offset_base + pos, [], payload
+                )
+            parsed_children.append(child)
             pos += child_size
             stream.seek(pos)
 

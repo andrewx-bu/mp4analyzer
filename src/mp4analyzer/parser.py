@@ -37,6 +37,7 @@ from .boxes import (
     ChunkOffsetBox,
     SampleGroupDescriptionBox,
     SampleToGroupBox,
+    ElementaryStreamDescriptorBox,
 )
 
 
@@ -92,6 +93,7 @@ BOX_PARSERS: Dict[str, Type[MP4Box]] = {
     "avcC": AVCConfigurationBox,
     "colr": ColourInformationBox,
     "pasp": PixelAspectRatioBox,
+    "esds": ElementaryStreamDescriptorBox,
     "stts": TimeToSampleBox,
     "ctts": CompositionOffsetBox,
     "stss": SyncSampleBox,

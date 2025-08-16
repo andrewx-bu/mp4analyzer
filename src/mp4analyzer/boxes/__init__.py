@@ -26,6 +26,7 @@ from .mp4a import MP4AudioSampleEntry
 from .avcc import AVCConfigurationBox
 from .colr import ColourInformationBox
 from .pasp import PixelAspectRatioBox
+from .esds import ElementaryStreamDescriptorBox
 from .stts import TimeToSampleBox
 from .ctts import CompositionOffsetBox
 from .stss import SyncSampleBox
@@ -64,6 +65,7 @@ __all__ = [
     "AVCConfigurationBox",
     "ColourInformationBox",
     "PixelAspectRatioBox",
+    "ElementaryStreamDescriptorBox",
     "TimeToSampleBox",
     "CompositionOffsetBox",
     "SyncSampleBox",

@@ -43,6 +43,7 @@ from src.mp4analyzer.boxes import (
     ChunkOffsetBox,
     SampleGroupDescriptionBox,
     SampleToGroupBox,
+    ElementaryStreamDescriptorBox,
 )
 
 # ------------------------------------------------------------------------------
@@ -879,6 +880,53 @@ def test_chunk_offset_box_properties(tmp_path):
         "box_name": "ChunkOffsetBox",
         "start": 0,
         "chunk_offsets": [19077, 741483, 1235346],
+    }
+
+
+def test_esds_box_properties(tmp_path):
+    descriptor_hex = (
+        "03 80 80 80 22 00 00 00 04 80 80 80 14 40 15 00 02 ab 00 04 "
+        "00 00 00 00 00 00 05 80 80 80 02 11 90 06 80 80 80 01 02"
+    )
+    descriptor = bytes.fromhex(descriptor_hex)
+    payload = b"\x00\x00\x00\x00" + descriptor
+    esds_box = mk_box(b"esds", payload)
+    mp4_path = tmp_path / "esds.mp4"
+    mp4_path.write_bytes(esds_box)
+
+    boxes = parse_mp4_boxes(str(mp4_path))
+    assert len(boxes) == 1
+    esds = boxes[0]
+    assert isinstance(esds, ElementaryStreamDescriptorBox)
+    assert esds.properties() == {
+        "size": 8 + len(payload),
+        "flags": 0,
+        "version": 0,
+        "box_name": "ElementaryStreamDescriptorBox",
+        "start": 0,
+        "data": "03808080 22000000 04808080 14401500 02ab0004 00000000 00000580 "
+        "80800211 90068080 800102",
+        "descriptor": {
+            "tag": 3,
+            "size": 34,
+            "ES_ID": 0,
+            "flags": 0,
+            "dependsOn_ES_ID": 0,
+            "URL": "",
+            "OCR_ES_ID": 0,
+            "decoderConfig": {
+                "tag": 4,
+                "size": 20,
+                "oti": 64,
+                "streamType": 5,
+                "upStream": False,
+                "bufferSize": 683,
+                "maxBitrate": 262144,
+                "avgBitrate": 0,
+                "decSpecificInfo": {"tag": 5, "size": 2, "data": "1190"},
+            },
+            "slConfig": {"tag": 6, "size": 1, "data": "02"},
+        },
     }
 
 

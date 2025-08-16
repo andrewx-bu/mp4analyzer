@@ -1,6 +1,7 @@
 import os
 import sys
 import struct
+from typing import Dict
 import pytest
 
 # Temporary: allow `pytest -q` from repo root without packaging the module.
@@ -35,6 +36,8 @@ from src.mp4analyzer.boxes import (
     HEVCSampleEntry,
     MP4AudioSampleEntry,
     AVCConfigurationBox,
+    HEVCConfigurationBox,
+    BitRateBox,
     ColourInformationBox,
     PixelAspectRatioBox,
     TimeToSampleBox,
@@ -294,6 +297,186 @@ def test_pixel_aspect_ratio_box_properties():
     }
 
 
+def test_hevc_configuration_box_properties():
+    vps = bytes(
+        [
+            64,
+            1,
+            12,
+            1,
+            255,
+            255,
+            1,
+            64,
+            0,
+            0,
+            3,
+            0,
+            128,
+            0,
+            0,
+            3,
+            0,
+            0,
+            3,
+            0,
+            90,
+            20,
+            144,
+            48,
+            0,
+            20,
+            88,
+            80,
+            4,
+            196,
+            180,
+            5,
+        ]
+    )
+    sps = bytes(
+        [
+            66,
+            1,
+            1,
+            1,
+            64,
+            0,
+            0,
+            3,
+            0,
+            128,
+            0,
+            0,
+            3,
+            0,
+            0,
+            3,
+            0,
+            90,
+            160,
+            5,
+            2,
+            1,
+            113,
+            242,
+            228,
+            20,
+            155,
+            145,
+            176,
+            18,
+            137,
+            232,
+            70,
+            186,
+            111,
+            203,
+            143,
+            94,
+            98,
+            118,
+            68,
+            230,
+            88,
+            251,
+            1,
+            64,
+            40,
+            0,
+            10,
+            44,
+            40,
+            2,
+            98,
+            90,
+            3,
+            0,
+            175,
+            123,
+            240,
+            0,
+            122,
+            18,
+            0,
+            15,
+            66,
+            100,
+        ]
+    )
+    pps = bytes([68, 1, 192, 60, 54, 3, 108, 128, 0])
+
+    hvcc_payload = (
+        b"\x01"  # configurationVersion
+        + b"\x01"  # profile/tier/idc
+        + b"\x40\x00\x00\x00"  # general_profile_compatibility
+        + bytes([128, 0, 0, 0, 0, 0])  # general_constraint_indicator
+        + b"\x5a"  # general_level_idc
+        + b"\xf0\x00"  # min_spatial_segmentation_idc
+        + b"\xfc"  # parallelismType
+        + b"\xfd"  # chroma_format_idc
+        + b"\xf8"  # bit_depth_luma_minus8
+        + b"\xf8"  # bit_depth_chroma_minus8
+        + b"\x00\x00"  # avgFrameRate
+        + b"\x0f"  # constantFrameRate/numTemporalLayers/temporalIdNested/lengthSizeMinusOne
+        + b"\x03"  # numOfArrays
+        + b"\xa0\x00\x01\x00\x20"
+        + vps
+        + b"\xa1\x00\x01\x00\x42"
+        + sps
+        + b"\xa2\x00\x01\x00\x09"
+        + pps
+    )
+    hvcc = HEVCConfigurationBox.from_parsed(
+        "hvcC", 8 + len(hvcc_payload), 1264941, hvcc_payload, []
+    )
+
+    def bdict(b: bytes) -> Dict[str, int]:
+        return {str(i): v for i, v in enumerate(b)}
+
+    assert hvcc.properties() == {
+        "size": 8 + len(hvcc_payload),
+        "box_name": "HEVCConfigurationBox",
+        "start": 1264941,
+        "configurationVersion": 1,
+        "general_profile_space": 0,
+        "general_tier_flag": 0,
+        "general_profile_idc": 1,
+        "general_profile_compatibility": 1073741824,
+        "general_constraint_indicator": [128, 0, 0, 0, 0, 0],
+        "general_level_idc": 90,
+        "min_spatial_segmentation_idc": 0,
+        "parallelismType": 0,
+        "chroma_format_idc": 1,
+        "bit_depth_luma_minus8": 0,
+        "bit_depth_chroma_minus8": 0,
+        "avgFrameRate": 0,
+        "constantFrameRate": 0,
+        "numTemporalLayers": 1,
+        "temporalIdNested": 1,
+        "lengthSizeMinusOne": 3,
+        "nalu_arrays": [
+            [{"data": bdict(vps)}],
+            [{"data": bdict(sps)}],
+            [{"data": bdict(pps)}],
+        ],
+    }
+
+
+def test_bit_rate_box_properties():
+    payload = struct.pack(">III", 0, 0x000F6F5D, 0x000F6F5D)
+    btrt = BitRateBox.from_parsed("btrt", 20, 1265110, payload, [])
+    assert btrt.properties() == {
+        "size": 20,
+        "box_name": "BitRateBox",
+        "start": 1265110,
+        "data": "00000000 000f6f5d 000f6f5d",
+        "bufferSizeDB": 0,
+        "maxBitrate": 1011549,
+        "avgBitrate": 1011549,
+    }
+
+
 def test_movie_header_box_properties():
     matrix = [0x00010000, 0, 0, 0, 0x00010000, 0, 0, 0, 0x40000000]
     payload = (
@@ -509,12 +692,16 @@ def test_avc_sample_entry_properties():
         + struct.pack(">H", 24)
         + b"\xff\xff"
     )
-    hvcc_box = struct.pack(">I4s", 8, b"hvcC")
-    padding = b"\x00" * (275 - 8 - len(header) - len(hvcc_box))
-    hev1_payload = header + hvcc_box + padding
-    hev1 = HEVCSampleEntry.from_parsed("hev1", 275, 1264855, hev1_payload, [])
+    hvcc_box = mk_box(b"hvcC", b"")
+    btrt_payload = struct.pack(">III", 0, 0x000F6F5D, 0x000F6F5D)
+    btrt_box = mk_box(b"btrt", btrt_payload)
+    pasp_payload = struct.pack(">II", 1, 1)
+    pasp_box = mk_box(b"pasp", pasp_payload)
+    hev1_payload = header + hvcc_box + btrt_box + pasp_box
+    hev1_size = 8 + len(hev1_payload)
+    hev1 = HEVCSampleEntry.from_parsed("hev1", hev1_size, 1264855, hev1_payload, [])
     assert hev1.properties() == {
-        "size": 275,
+        "size": hev1_size,
         "box_name": "HEVCSampleEntry",
         "start": 1264855,
         "data_reference_index": 1,
@@ -526,6 +713,10 @@ def test_avc_sample_entry_properties():
         "compressorname": "",
         "depth": 24,
     }
+    assert len(hev1.children) == 3
+    assert isinstance(hev1.children[0], HEVCConfigurationBox)
+    assert isinstance(hev1.children[1], BitRateBox)
+    assert isinstance(hev1.children[2], PixelAspectRatioBox)
     mp4a_payload = (
         b"\x00" * 6
         + struct.pack(">H", 1)  # data_reference_index

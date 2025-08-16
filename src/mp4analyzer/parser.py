@@ -29,6 +29,8 @@ from .boxes import (
     HEVCSampleEntry,
     MP4AudioSampleEntry,
     AVCConfigurationBox,
+    HEVCConfigurationBox,
+    BitRateBox,
     ColourInformationBox,
     PixelAspectRatioBox,
     TimeToSampleBox,
@@ -97,6 +99,8 @@ BOX_PARSERS: Dict[str, Type[MP4Box]] = {
     "hev1": HEVCSampleEntry,
     "mp4a": MP4AudioSampleEntry,
     "avcC": AVCConfigurationBox,
+    "hvcC": HEVCConfigurationBox,
+    "btrt": BitRateBox,
     "colr": ColourInformationBox,
     "pasp": PixelAspectRatioBox,
     "esds": ElementaryStreamDescriptorBox,
@@ -170,8 +174,10 @@ def _parse_box(
             f.seek(payload_size, os.SEEK_CUR)
 
     box_cls = BOX_PARSERS.get(btype)
-    if box_cls:
-        return box_cls.from_parsed(btype, size, start, data or b"", children)
+    if box_cls and hasattr(box_cls, "from_parsed"):
+        return getattr(box_cls, "from_parsed")(
+            btype, size, start, data or b"", children
+        )
     return MP4Box(btype, size, start, children, data)
 
 

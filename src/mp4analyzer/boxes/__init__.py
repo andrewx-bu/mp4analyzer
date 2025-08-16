@@ -28,6 +28,8 @@ from .avc1 import AVCSampleEntry
 from .hev1 import HEVCSampleEntry
 from .mp4a import MP4AudioSampleEntry
 from .avcc import AVCConfigurationBox
+from .hvcc import HEVCConfigurationBox
+from .btrt import BitRateBox
 from .colr import ColourInformationBox
 from .pasp import PixelAspectRatioBox
 from .esds import ElementaryStreamDescriptorBox
@@ -71,6 +73,8 @@ __all__ = [
     "HEVCSampleEntry",
     "MP4AudioSampleEntry",
     "AVCConfigurationBox",
+    "HEVCConfigurationBox",
+    "BitRateBox",
     "ColourInformationBox",
     "PixelAspectRatioBox",
     "ElementaryStreamDescriptorBox",

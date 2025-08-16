@@ -6,6 +6,10 @@ import struct
 from io import BytesIO
 
 from .base import MP4Box
+from .hvcc import HEVCConfigurationBox
+from .btrt import BitRateBox
+from .colr import ColourInformationBox
+from .pasp import PixelAspectRatioBox
 
 
 @dataclass
@@ -60,9 +64,26 @@ class HEVCSampleEntry(MP4Box):
                 break
             child_type_str = child_type.decode("latin-1")
             payload = stream.read(child_size - 8)
-            child = MP4Box(
-                child_type_str, child_size, child_offset_base + pos, [], payload
-            )
+            if child_type_str == "hvcC":
+                child = HEVCConfigurationBox.from_parsed(
+                    child_type_str, child_size, child_offset_base + pos, payload, []
+                )
+            elif child_type_str == "btrt":
+                child = BitRateBox.from_parsed(
+                    child_type_str, child_size, child_offset_base + pos, payload, []
+                )
+            elif child_type_str == "colr":
+                child = ColourInformationBox.from_parsed(
+                    child_type_str, child_size, child_offset_base + pos, payload, []
+                )
+            elif child_type_str == "pasp":
+                child = PixelAspectRatioBox.from_parsed(
+                    child_type_str, child_size, child_offset_base + pos, payload, []
+                )
+            else:
+                child = MP4Box(
+                    child_type_str, child_size, child_offset_base + pos, [], payload
+                )
             parsed_children.append(child)
             pos += child_size
             stream.seek(pos)

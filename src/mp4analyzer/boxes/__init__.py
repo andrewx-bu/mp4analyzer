@@ -31,6 +31,8 @@ from .sdtp import SampleDependencyTypeBox
 from .stsc import SampleToChunkBox
 from .stsz import SampleSizeBox
 from .stco import ChunkOffsetBox
+from .sgpd import SampleGroupDescriptionBox
+from .sbgp import SampleToGroupBox
 
 
 __all__ = [
@@ -65,4 +67,6 @@ __all__ = [
     "SampleToChunkBox",
     "SampleSizeBox",
     "ChunkOffsetBox",
+    "SampleGroupDescriptionBox",
+    "SampleToGroupBox",
 ]

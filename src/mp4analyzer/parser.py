@@ -33,6 +33,8 @@ from .boxes import (
     SampleToChunkBox,
     SampleSizeBox,
     ChunkOffsetBox,
+    SampleGroupDescriptionBox,
+    SampleToGroupBox,
 )
 
 
@@ -93,6 +95,8 @@ BOX_PARSERS: Dict[str, Type[MP4Box]] = {
     "stsc": SampleToChunkBox,
     "stsz": SampleSizeBox,
     "stco": ChunkOffsetBox,
+    "sgpd": SampleGroupDescriptionBox,
+    "sbgp": SampleToGroupBox,
 }
 
 # Box types for which raw payload data should be captured for later processing

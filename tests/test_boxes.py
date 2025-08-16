@@ -39,6 +39,8 @@ from src.mp4analyzer.boxes import (
     SampleToChunkBox,
     SampleSizeBox,
     ChunkOffsetBox,
+    SampleGroupDescriptionBox,
+    SampleToGroupBox,
 )
 
 # ------------------------------------------------------------------------------
@@ -537,6 +539,50 @@ def test_track_box_aggregation(tmp_path):
         "samples_duration": 300,
         "samples_size": 60,
         "sample_groups_info": [{"grouping_type": "roll", "entry_count": 2}],
+    }
+
+
+def test_sample_group_boxes(tmp_path):
+    sgpd_payload = (
+        b"\x01\x00\x00\x00"  # version/flags
+        + b"roll"  # grouping type
+        + struct.pack(">I", 2)  # default length
+        + struct.pack(">I", 0)  # entry count
+    )
+    sbgp_payload = (
+        b"\x00\x00\x00\x00"  # version/flags
+        + b"roll"  # grouping type
+        + struct.pack(">I", 1)  # entry count
+        + struct.pack(">I", 901)
+        + struct.pack(">I", 0)
+    )
+    mp4_path = tmp_path / "groups.mp4"
+    mp4_path.write_bytes(mk_box(b"sgpd", sgpd_payload) + mk_box(b"sbgp", sbgp_payload))
+
+    boxes = parse_mp4_boxes(str(mp4_path))
+    assert len(boxes) == 2
+    sgpd, sbgp = boxes
+    assert isinstance(sgpd, SampleGroupDescriptionBox)
+    assert isinstance(sbgp, SampleToGroupBox)
+    assert sgpd.properties() == {
+        "size": 24,
+        "flags": 0,
+        "version": 1,
+        "box_name": "SampleGroupDescriptionBox",
+        "start": 0,
+        "grouping_type": "roll",
+        "default_length": 2,
+        "used": True,
+    }
+    assert sbgp.properties() == {
+        "size": 28,
+        "flags": 0,
+        "version": 0,
+        "box_name": "SampleToGroupBox",
+        "start": 24,
+        "grouping_type": "roll",
+        "grouping_type_parameter": 0,
+        "entries": [{"sample_count": 901, "group_description_index": 0}],
     }
 
 

@@ -6,6 +6,7 @@ import struct
 from .base import MP4Box
 from .stts import TimeToSampleBox
 from .stsz import SampleSizeBox
+from .sgpd import SampleGroupDescriptionBox
 
 
 def _find_descendant(boxes: List[MP4Box], path: List[str]) -> MP4Box | None:
@@ -94,6 +95,14 @@ class TrackBox(MP4Box):
         # Gather sample group information from sgpd boxes
         sample_groups_info: List[Dict[str, int | str]] = []
         for sgpd in _find_descendants(children, "sgpd"):
+            if isinstance(sgpd, SampleGroupDescriptionBox):
+                sample_groups_info.append(
+                    {
+                        "grouping_type": sgpd.grouping_type,
+                        "entry_count": sgpd.entry_count,
+                    }
+                )
+                continue
             if not sgpd.data or len(sgpd.data) < 12:
                 continue
             d = sgpd.data

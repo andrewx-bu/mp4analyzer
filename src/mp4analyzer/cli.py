@@ -8,21 +8,22 @@ import os
 from pathlib import Path
 from typing import Dict, Any, List
 
-from . import parse_mp4_boxes, generate_movie_info, format_box_tree
+from . import parse_mp4_boxes, generate_movie_info
 
 
 class Colors:
     """ANSI color codes."""
-    BLUE = '\033[94m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    PURPLE = '\033[95m'
-    CYAN = '\033[96m'
-    WHITE = '\033[97m'
-    GRAY = '\033[90m'
-    BOLD = '\033[1m'
-    END = '\033[0m'
+
+    BLUE = "\033[94m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    RED = "\033[91m"
+    PURPLE = "\033[95m"
+    CYAN = "\033[96m"
+    WHITE = "\033[97m"
+    GRAY = "\033[90m"
+    BOLD = "\033[1m"
+    END = "\033[0m"
 
 
 def _colorize(text: str, color: str, use_color: bool) -> str:
@@ -41,7 +42,12 @@ def _box_to_dict(box) -> Dict[str, Any]:
     }
 
 
-def _format_properties(properties: Dict[str, Any], indent: int = 0, use_color: bool = False, expand: bool = False) -> List[str]:
+def _format_properties(
+    properties: Dict[str, Any],
+    indent: int = 0,
+    use_color: bool = False,
+    expand: bool = False,
+) -> List[str]:
     """Format box properties for display."""
     lines = []
     prefix = "  " * (indent + 1)
@@ -54,14 +60,14 @@ def _format_properties(properties: Dict[str, Any], indent: int = 0, use_color: b
 
         if isinstance(value, list) and len(value) > 0:
             if expand or len(value) <= 5:
-                value_str = ', '.join(map(str, value))
+                value_str = ", ".join(map(str, value))
                 if len(value_str) > 80:  # Split long arrays
                     lines.append(f"{prefix}{key_colored}: [")
                     items = [str(x) for x in value]
                     line = f"{prefix}    "
                     for i, item in enumerate(items):
                         if len(line + item) > 120:
-                            lines.append(line.rstrip(', ') + ',')
+                            lines.append(line.rstrip(", ") + ",")
                             line = f"{prefix}    {item}"
                         else:
                             line += f"{item}, " if i < len(items) - 1 else item
@@ -69,7 +75,9 @@ def _format_properties(properties: Dict[str, Any], indent: int = 0, use_color: b
                 else:
                     lines.append(f"{prefix}{key_colored}: [{value_str}]")
             else:
-                display_value = f"[{', '.join(map(str, value[:5]))}...] ({len(value)} items)"
+                display_value = (
+                    f"[{', '.join(map(str, value[:5]))}...] ({len(value)} items)"
+                )
                 lines.append(f"{prefix}{key_colored}: {display_value}")
         elif isinstance(value, bytes):
             if expand or len(value) <= 16:
@@ -77,7 +85,7 @@ def _format_properties(properties: Dict[str, Any], indent: int = 0, use_color: b
                 if len(hex_str) > 80:  # Split long hex data
                     lines.append(f"{prefix}{key_colored}: ")
                     for i in range(0, len(hex_str), 64):
-                        chunk = hex_str[i:i+64]
+                        chunk = hex_str[i : i + 64]
                         lines.append(f"{prefix}    {chunk}")
                 else:
                     lines.append(f"{prefix}{key_colored}: {hex_str}")
@@ -89,7 +97,7 @@ def _format_properties(properties: Dict[str, Any], indent: int = 0, use_color: b
             if len(display_value) > 80:  # Split long strings
                 lines.append(f"{prefix}{key_colored}: ")
                 for i in range(0, len(display_value), 80):
-                    chunk = display_value[i:i+80]
+                    chunk = display_value[i : i + 80]
                     lines.append(f"{prefix}    {chunk}")
             else:
                 lines.append(f"{prefix}{key_colored}: {display_value}")
@@ -97,7 +105,14 @@ def _format_properties(properties: Dict[str, Any], indent: int = 0, use_color: b
     return lines
 
 
-def _format_box_tree_visual(boxes, indent: int = 0, is_last: List[bool] = None, show_properties: bool = True, use_color: bool = False, expand: bool = False) -> List[str]:
+def _format_box_tree_visual(
+    boxes,
+    indent: int = 0,
+    is_last: List[bool] = None,
+    show_properties: bool = True,
+    use_color: bool = False,
+    expand: bool = False,
+) -> List[str]:
     """Format box tree with visual hierarchy."""
     lines = []
     if is_last is None:
@@ -120,7 +135,9 @@ def _format_box_tree_visual(boxes, indent: int = 0, is_last: List[bool] = None, 
 
         box_line = f"{tree_chars}{box_type} ({size_info}, {offset_info})"
         if hasattr(box, "__class__") and box.__class__.__name__ != "MP4Box":
-            class_name = _colorize(f"[{box.__class__.__name__}]", Colors.PURPLE, use_color)
+            class_name = _colorize(
+                f"[{box.__class__.__name__}]", Colors.PURPLE, use_color
+            )
             box_line += f" {class_name}"
 
         lines.append(box_line)
@@ -128,7 +145,9 @@ def _format_box_tree_visual(boxes, indent: int = 0, is_last: List[bool] = None, 
         # Show properties if requested
         if show_properties:
             props = box.properties()
-            filtered_props = {k: v for k, v in props.items() if k not in {"size", "start", "box_name"}}
+            filtered_props = {
+                k: v for k, v in props.items() if k not in {"size", "start", "box_name"}
+            }
 
             if filtered_props:
                 prop_prefix = ""
@@ -136,24 +155,35 @@ def _format_box_tree_visual(boxes, indent: int = 0, is_last: List[bool] = None, 
                     prop_prefix += "    " if last else "│   "
                 prop_prefix += "    " if is_final else "│   "
 
-                for j, line in enumerate(_format_properties(filtered_props, 0, use_color, expand)):
+                for j, line in enumerate(
+                    _format_properties(filtered_props, 0, use_color, expand)
+                ):
                     lines.append(f"{prop_prefix}{line.strip()}")
 
         # Process children
         if box.children:
-            lines.extend(_format_box_tree_visual(
-                box.children,
-                indent + 1,
-                is_last + [is_final],
-                show_properties,
-                use_color,
-                expand
-            ))
+            lines.extend(
+                _format_box_tree_visual(
+                    box.children,
+                    indent + 1,
+                    is_last + [is_final],
+                    show_properties,
+                    use_color,
+                    expand,
+                )
+            )
 
     return lines
 
 
-def _output_stdout(file_path: str, boxes, movie_info: str, detailed: bool = False, use_color: bool = False, expand: bool = False) -> None:
+def _output_stdout(
+    file_path: str,
+    boxes,
+    movie_info: str,
+    detailed: bool = False,
+    use_color: bool = False,
+    expand: bool = False,
+) -> None:
     """Output analysis to stdout in human-readable format."""
     title = f"MP4 Analysis: {Path(file_path).name}"
     title_colored = _colorize(title, Colors.BOLD + Colors.WHITE, use_color)
@@ -173,14 +203,18 @@ def _output_stdout(file_path: str, boxes, movie_info: str, detailed: bool = Fals
     print(_colorize("Box Structure:", Colors.BOLD + Colors.WHITE, use_color))
     print(_colorize("-" * 30, Colors.GRAY, use_color))
 
-    lines = _format_box_tree_visual(boxes, show_properties=detailed, use_color=use_color, expand=expand)
+    lines = _format_box_tree_visual(
+        boxes, show_properties=detailed, use_color=use_color, expand=expand
+    )
     for line in lines:
         print(line)
 
 
 def _output_summary(file_path: str, boxes, use_color: bool = False) -> None:
     """Output a concise summary of the MP4 file."""
-    title = _colorize(f"MP4 Summary: {Path(file_path).name}", Colors.BOLD + Colors.WHITE, use_color)
+    title = _colorize(
+        f"MP4 Summary: {Path(file_path).name}", Colors.BOLD + Colors.WHITE, use_color
+    )
     print(title)
     print(_colorize("=" * 40, Colors.GRAY, use_color))
 
@@ -198,9 +232,13 @@ def _output_summary(file_path: str, boxes, use_color: bool = False) -> None:
     count_boxes(boxes)
 
     # Show summary with colors
-    print(f"{_colorize('Total file size:', Colors.YELLOW, use_color)} {total_size:,} bytes")
+    print(
+        f"{_colorize('Total file size:', Colors.YELLOW, use_color)} {total_size:,} bytes"
+    )
     print(f"{_colorize('Top-level boxes:', Colors.YELLOW, use_color)} {len(boxes)}")
-    print(f"{_colorize('Total box count:', Colors.YELLOW, use_color)} {sum(box_counts.values())}")
+    print(
+        f"{_colorize('Total box count:', Colors.YELLOW, use_color)} {sum(box_counts.values())}"
+    )
     print()
 
     print(_colorize("Box type counts:", Colors.BOLD, use_color))
@@ -247,18 +285,51 @@ Examples:
 
     parser.add_argument("file", help="MP4 file to analyze")
 
-    parser.add_argument("-o", "--output", choices=["stdout", "json"], default="stdout", help="Output format (default: stdout)")
-    parser.add_argument("-d", "--detailed", action="store_true", help="Show detailed box properties and internal fields")
-    parser.add_argument("-s", "--summary", action="store_true", help="Show concise summary instead of full analysis")
-    parser.add_argument("-e", "--expand", action="store_true", help="Expand all arrays and large data structures")
-    parser.add_argument("-c", "--color", action="store_true", default=True, help="Enable colored output (default: True)")
-    parser.add_argument("--no-color", action="store_false", dest="color", help="Disable colored output")
+    parser.add_argument(
+        "-o",
+        "--output",
+        choices=["stdout", "json"],
+        default="stdout",
+        help="Output format (default: stdout)",
+    )
+    parser.add_argument(
+        "-d",
+        "--detailed",
+        action="store_true",
+        help="Show detailed box properties and internal fields",
+    )
+    parser.add_argument(
+        "-s",
+        "--summary",
+        action="store_true",
+        help="Show concise summary instead of full analysis",
+    )
+    parser.add_argument(
+        "-e",
+        "--expand",
+        action="store_true",
+        help="Expand all arrays and large data structures",
+    )
+    parser.add_argument(
+        "-c",
+        "--color",
+        action="store_true",
+        default=True,
+        help="Enable colored output (default: True)",
+    )
+    parser.add_argument(
+        "--no-color", action="store_false", dest="color", help="Disable colored output"
+    )
     parser.add_argument("-j", "--json-path", help="Path to save JSON output")
 
     args = parser.parse_args()
 
     # Auto-detect color support
-    use_color = args.color and (os.getenv("NO_COLOR") is None) and (sys.stdout.isatty() or os.getenv("FORCE_COLOR"))
+    use_color = (
+        args.color
+        and (os.getenv("NO_COLOR") is None)
+        and (sys.stdout.isatty() or os.getenv("FORCE_COLOR"))
+    )
 
     # Validate file exists
     file_path = Path(args.file)
@@ -288,7 +359,14 @@ Examples:
                 _output_summary(str(file_path), boxes, use_color)
             else:
                 movie_info = generate_movie_info(str(file_path), boxes)
-                _output_stdout(str(file_path), boxes, movie_info, args.detailed, use_color, args.expand)
+                _output_stdout(
+                    str(file_path),
+                    boxes,
+                    movie_info,
+                    args.detailed,
+                    use_color,
+                    args.expand,
+                )
 
         # Save JSON if json_path specified regardless of output format
         if args.json_path and args.output != "json":
@@ -299,6 +377,7 @@ Examples:
         print(f"Error analyzing file: {e}", file=sys.stderr)
         if args.detailed:
             import traceback
+
             traceback.print_exc()
         sys.exit(1)
 

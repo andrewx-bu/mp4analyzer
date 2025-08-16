@@ -101,9 +101,45 @@ class LeftPanelWidget(QSplitter):
         metadata_layout.setContentsMargins(0, 0, 0, 0)
         metadata_layout.addWidget(self.metadata_view)
 
+        # Boxes section with expand/collapse buttons
+        boxes_container = QWidget()
+        boxes_layout = QVBoxLayout(boxes_container)
+        boxes_layout.setContentsMargins(0, 0, 0, 0)
+
+        boxes_header = QWidget()
+        boxes_header.setFixedHeight(20)
+        boxes_header_layout = QHBoxLayout(boxes_header)
+        boxes_header_layout.setContentsMargins(0, 0, 0, 0)
+
+        title_label = QLabel("MP4 Boxes")
+        title_label.setAlignment(
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+        )
+        title_label.setStyleSheet("font-weight: bold;")
+
+        self.expand_button = QPushButton("+")
+        self.collapse_button = QPushButton("-")
+        for btn in [self.expand_button, self.collapse_button]:
+            btn.setFixedSize(20, 20)
+            btn.setStyleSheet("font-size: 12px;")
+
+        boxes_header_layout.addWidget(
+            title_label, alignment=Qt.AlignmentFlag.AlignVCenter
+        )
+        boxes_header_layout.addStretch()
+        boxes_header_layout.addWidget(
+            self.expand_button, alignment=Qt.AlignmentFlag.AlignVCenter
+        )
+        boxes_header_layout.addWidget(
+            self.collapse_button, alignment=Qt.AlignmentFlag.AlignVCenter
+        )
+
         self.boxes_tree = QTreeWidget()
         self.boxes_tree.setHeaderLabels(["Box", "Details"])
         self.boxes_tree.setTextElideMode(Qt.TextElideMode.ElideRight)
+
+        boxes_layout.addWidget(boxes_header)
+        boxes_layout.addWidget(self.boxes_tree)
 
         monospace_font = QFont("Courier New")
         monospace_font.setStyleHint(QFont.StyleHint.Monospace)
@@ -130,11 +166,27 @@ class LeftPanelWidget(QSplitter):
         self.log_box.setPlaceholderText("Log Messages")
 
         self.addWidget(metadata_container)
-        self.addWidget(self.boxes_tree)
+        self.addWidget(boxes_container)
         self.addWidget(self.log_box)
         self.addWidget(playback_control_widget)
 
         self.setSizes([160, 440, 120, 80])
+
+        # Connect buttons
+        self.expand_button.clicked.connect(
+            lambda: (
+                self.boxes_tree.expandAll(),
+                self.boxes_tree.resizeColumnToContents(0),
+                self.boxes_tree.resizeColumnToContents(1),
+            )
+        )
+        self.collapse_button.clicked.connect(
+            lambda: (
+                self.boxes_tree.collapseAll(),
+                self.boxes_tree.resizeColumnToContents(0),
+                self.boxes_tree.resizeColumnToContents(1),
+            )
+        )
 
     def update_metadata(self, metadata_text: str):
         """Display formatted metadata text."""
@@ -157,10 +209,10 @@ class LeftPanelWidget(QSplitter):
 
         light_blue_brush = QBrush(QColor("#ADD8E6"))
 
-        def _add_box(parent: QTreeWidgetItem, box: MP4Box):
+        def _add_box(parent: QTreeWidgetItem, box: MP4Box, hierarchy: str = ""):
             props = box.properties()
             item = QTreeWidgetItem(parent)
-            item.setText(1, "")
+            item.setText(1, hierarchy)
 
             box_name = props.get("box_name", "")
             label_text = f"<span style='color:red'>{box.type}</span>"
@@ -177,13 +229,18 @@ class LeftPanelWidget(QSplitter):
                 prop_item.setForeground(1, light_blue_brush)
 
             # Recurse into child boxes
+            child_hierarchy = (
+                hierarchy + box.type + "/" if hierarchy or box.children else hierarchy
+            )
             for child in box.children:
-                _add_box(item, child)
+                _add_box(item, child, child_hierarchy)
 
         root = self.boxes_tree.invisibleRootItem()
         for box in boxes:
             _add_box(root, box)
         self.boxes_tree.expandToDepth(1)
+        self.boxes_tree.resizeColumnToContents(0)
+        self.boxes_tree.resizeColumnToContents(1)
 
     def add_log_message(self, message: str):
         self.log_box.append(message)

@@ -28,9 +28,9 @@ class TimelineBarGraph(QWidget):
 
     def __init__(self, frame_selection_callback: Callable[[int], None]):
         super().__init__()
-        self._frame_data: List[FrameData] = []     # list of frames to visualize
-        self._selected_frame = -1                  # current selection index
-        self._hovered_frame = -1                   # frame under mouse cursor
+        self._frame_data: List[FrameData] = []  # list of frames to visualize
+        self._selected_frame = -1  # current selection index
+        self._hovered_frame = -1  # frame under mouse cursor
         self._callback = frame_selection_callback  # notify main window when selected
         self._scroll_area: Optional[QScrollArea] = None
 

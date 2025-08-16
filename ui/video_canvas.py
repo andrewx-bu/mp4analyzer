@@ -12,7 +12,9 @@ class DraggableVideoLabel(QLabel):
         super().__init__(parent)
         self.setStyleSheet("border: none")
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._drag_offset: Optional[QPoint] = None  # offset between click pos and widget pos
+        self._drag_offset: Optional[QPoint] = (
+            None  # offset between click pos and widget pos
+        )
 
     def set_image(self, pixmap: QPixmap):
         """Set and resize label to fit pixmap."""

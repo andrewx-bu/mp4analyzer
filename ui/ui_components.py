@@ -116,7 +116,9 @@ class LeftPanelWidget(QSplitter):
         boxes_header_layout.setContentsMargins(0, 0, 0, 0)
 
         title_label = QLabel("MP4 Boxes")
-        title_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        title_label.setAlignment(
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+        )
         title_label.setStyleSheet("font-weight: bold;")
 
         self.expand_button = QPushButton("+")
@@ -125,10 +127,16 @@ class LeftPanelWidget(QSplitter):
             btn.setFixedSize(20, 20)
             btn.setStyleSheet("font-size: 12px;")
 
-        boxes_header_layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignVCenter)
+        boxes_header_layout.addWidget(
+            title_label, alignment=Qt.AlignmentFlag.AlignVCenter
+        )
         boxes_header_layout.addStretch()
-        boxes_header_layout.addWidget(self.expand_button, alignment=Qt.AlignmentFlag.AlignVCenter)
-        boxes_header_layout.addWidget(self.collapse_button, alignment=Qt.AlignmentFlag.AlignVCenter)
+        boxes_header_layout.addWidget(
+            self.expand_button, alignment=Qt.AlignmentFlag.AlignVCenter
+        )
+        boxes_header_layout.addWidget(
+            self.collapse_button, alignment=Qt.AlignmentFlag.AlignVCenter
+        )
 
         # Tree widget to display MP4 boxes
         self.boxes_tree = QTreeWidget()

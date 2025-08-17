@@ -23,6 +23,7 @@ from .smhd import SoundMediaHeaderBox
 from .dinf import DataInformationBox
 from .dref import DataReferenceBox
 from .udta import UserDataBox
+from .tref import TrackReferenceBox, TrackReferenceTypeBox
 from .url_ import DataEntryUrlBox
 from .stbl import SampleTableBox
 from .stsd import SampleDescriptionBox
@@ -70,6 +71,8 @@ __all__ = [
     "DataInformationBox",
     "DataReferenceBox",
     "UserDataBox",
+    "TrackReferenceBox",
+    "TrackReferenceTypeBox",
     "DataEntryUrlBox",
     "SampleTableBox",
     "SampleDescriptionBox",

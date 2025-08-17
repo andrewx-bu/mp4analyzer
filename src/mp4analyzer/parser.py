@@ -44,6 +44,8 @@ from .boxes import (
     SampleGroupDescriptionBox,
     SampleToGroupBox,
     UserDataBox,
+    TrackReferenceBox,
+    TrackReferenceTypeBox,
     ElementaryStreamDescriptorBox,
 )
 
@@ -82,6 +84,7 @@ BOX_PARSERS: Dict[str, Type[MP4Box]] = {
     "trak": TrackBox,
     "mdia": MediaBox,
     "udta": UserDataBox,
+    "tref": TrackReferenceBox,
     "free": FreeSpaceBox,
     "edts": EditBox,
     "elst": EditListBox,
@@ -114,6 +117,7 @@ BOX_PARSERS: Dict[str, Type[MP4Box]] = {
     "stco": ChunkOffsetBox,
     "sgpd": SampleGroupDescriptionBox,
     "sbgp": SampleToGroupBox,
+    "chap": TrackReferenceTypeBox,
 }
 
 # Keep raw payloads for later
@@ -171,6 +175,24 @@ def _parse_box(
         sub_offset = start + hdr_size + 4
         sub_size = len(payload) - 4
         sub_end = sub_offset + sub_size
+        while substream.tell() + sub_offset < sub_end:
+            child = _parse_box(
+                substream,
+                sub_end,
+                sub_end,
+                sub_offset,
+            )
+            if not child:
+                break
+            children.append(child)
+        data = payload
+    elif btype == "tref":
+        import io
+
+        payload = f.read(payload_size)
+        substream = io.BytesIO(payload)
+        sub_offset = start + hdr_size
+        sub_end = sub_offset + len(payload)
         while substream.tell() + sub_offset < sub_end:
             child = _parse_box(
                 substream,

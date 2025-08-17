@@ -27,6 +27,8 @@ from src.mp4analyzer.boxes import (
     SoundMediaHeaderBox,
     DataInformationBox,
     DataReferenceBox,
+    TrackReferenceBox,
+    TrackReferenceTypeBox,
     DataEntryUrlBox,
     SampleTableBox,
     SampleDescriptionBox,
@@ -114,6 +116,23 @@ def test_box_properties(tmp_path):
                 "media_rate_fraction": 0,
             }
         ],
+    }
+
+    chap_payload = struct.pack(">I", 2)
+    chap = TrackReferenceTypeBox.from_parsed("chap", 12, 292, chap_payload, [])
+    tref_payload = struct.pack(">I4sI", 12, b"chap", 2)
+    tref = TrackReferenceBox.from_parsed("tref", 20, 284, tref_payload, [chap])
+    assert tref.properties() == {
+        "size": 20,
+        "box_name": "TrackReferenceBox",
+        "start": 284,
+        "data": "0000000c 63686170 00000002",
+    }
+    assert chap.properties() == {
+        "size": 12,
+        "box_name": "TrackReferenceTypeBox",
+        "start": 292,
+        "track_ids": [2],
     }
 
     hdlr_payload = (

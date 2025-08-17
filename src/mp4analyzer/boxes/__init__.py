@@ -37,6 +37,7 @@ from .av1c import AV1CodecConfigurationBox
 from .btrt import BitRateBox
 from .colr import ColourInformationBox
 from .pasp import PixelAspectRatioBox
+from .fiel import FieldHandlingBox
 from .esds import ElementaryStreamDescriptorBox
 from .stts import TimeToSampleBox
 from .ctts import CompositionOffsetBox
@@ -91,6 +92,7 @@ __all__ = [
     "BitRateBox",
     "ColourInformationBox",
     "PixelAspectRatioBox",
+    "FieldHandlingBox",
     "ElementaryStreamDescriptorBox",
     "TimeToSampleBox",
     "CompositionOffsetBox",

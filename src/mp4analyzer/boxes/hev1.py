@@ -10,6 +10,7 @@ from .hvcc import HEVCConfigurationBox
 from .btrt import BitRateBox
 from .colr import ColourInformationBox
 from .pasp import PixelAspectRatioBox
+from .fiel import FieldHandlingBox
 
 
 @dataclass
@@ -78,6 +79,10 @@ class HEVCSampleEntry(MP4Box):
                 )
             elif child_type_str == "pasp":
                 child = PixelAspectRatioBox.from_parsed(
+                    child_type_str, child_size, child_offset_base + pos, payload, []
+                )
+            elif child_type_str == "fiel":
+                child = FieldHandlingBox.from_parsed(
                     child_type_str, child_size, child_offset_base + pos, payload, []
                 )
             else:

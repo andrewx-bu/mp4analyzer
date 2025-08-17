@@ -42,6 +42,7 @@ from src.mp4analyzer.boxes import (
     BitRateBox,
     ColourInformationBox,
     PixelAspectRatioBox,
+    FieldHandlingBox,
     TimeToSampleBox,
     CompositionOffsetBox,
     SyncSampleBox,
@@ -350,6 +351,19 @@ def test_pixel_aspect_ratio_box_properties():
         "data": "00000001 00000001",
         "hSpacing": 1,
         "vSpacing": 1,
+    }
+
+
+def test_field_handling_box_properties():
+    payload = b"\x01\x00"
+    fiel = FieldHandlingBox.from_parsed("fiel", 10, 2576, payload, [])
+    assert fiel.properties() == {
+        "size": 10,
+        "box_name": "FieldHandlingBox",
+        "start": 2576,
+        "data": "0100",
+        "fieldCount": 1,
+        "fieldOrdering": 0,
     }
 
 
@@ -759,7 +773,7 @@ def test_avc_sample_entry_properties():
     )
     avcc_box = mk_box(b"avcC", avcc_payload)
 
-    # Build the avc1 header (78 bytes) followed by avcC box and padding
+    # Build the avc1 header (78 bytes) followed by avcC box and fiel boxes
     name = b"AVC Coding"
     compressor_field = bytes([len(name)]) + name + b"\x00" * (31 - len(name))
     header = (
@@ -776,11 +790,13 @@ def test_avc_sample_entry_properties():
         + struct.pack(">H", 0)  # depth
         + b"\xff\xff"  # pre_defined
     )
-    padding = b"\x00" * 35
-    avc1_payload = header + avcc_box + padding
-    avc1 = AVCSampleEntry.from_parsed("avc1", 179, 508, avc1_payload, [])
+    fiel_payload = b"\x01\x00"
+    fiel_box = mk_box(b"fiel", fiel_payload)
+    avc1_payload = header + avcc_box + fiel_box
+    avc1_size = 8 + len(avc1_payload)
+    avc1 = AVCSampleEntry.from_parsed("avc1", avc1_size, 508, avc1_payload, [])
     assert avc1.properties() == {
-        "size": 179,
+        "size": avc1_size,
         "box_name": "AVCSampleEntry",
         "start": 508,
         "data_reference_index": 1,
@@ -792,6 +808,9 @@ def test_avc_sample_entry_properties():
         "compressorname": "AVC Coding",
         "depth": 0,
     }
+    assert len(avc1.children) == 2
+    assert isinstance(avc1.children[0], AVCConfigurationBox)
+    assert isinstance(avc1.children[1], FieldHandlingBox)
 
     comp_field = b"\x00" * 32
     header = (
@@ -813,7 +832,9 @@ def test_avc_sample_entry_properties():
     btrt_box = mk_box(b"btrt", btrt_payload)
     pasp_payload = struct.pack(">II", 1, 1)
     pasp_box = mk_box(b"pasp", pasp_payload)
-    hev1_payload = header + hvcc_box + btrt_box + pasp_box
+    fiel_payload = b"\x01\x00"
+    fiel_box = mk_box(b"fiel", fiel_payload)
+    hev1_payload = header + hvcc_box + btrt_box + fiel_box + pasp_box
     hev1_size = 8 + len(hev1_payload)
     hev1 = HEVCSampleEntry.from_parsed("hev1", hev1_size, 1264855, hev1_payload, [])
     assert hev1.properties() == {
@@ -829,10 +850,11 @@ def test_avc_sample_entry_properties():
         "compressorname": "",
         "depth": 24,
     }
-    assert len(hev1.children) == 3
+    assert len(hev1.children) == 4
     assert isinstance(hev1.children[0], HEVCConfigurationBox)
     assert isinstance(hev1.children[1], BitRateBox)
-    assert isinstance(hev1.children[2], PixelAspectRatioBox)
+    assert isinstance(hev1.children[2], FieldHandlingBox)
+    assert isinstance(hev1.children[3], PixelAspectRatioBox)
     mp4a_payload = (
         b"\x00" * 6
         + struct.pack(">H", 1)  # data_reference_index
@@ -905,7 +927,9 @@ def test_av1_sample_entry_properties():
         + struct.pack(">H", 24)  # depth
         + b"\xff\xff"
     )
-    av01_payload = header + av1c_box
+    fiel_payload = b"\x01\x00"
+    fiel_box = mk_box(b"fiel", fiel_payload)
+    av01_payload = header + av1c_box + fiel_box
     av01_size = 8 + len(av01_payload)
     av01 = AV1SampleEntry.from_parsed("av01", av01_size, 2000, av01_payload, [])
     assert av01.properties() == {
@@ -921,8 +945,9 @@ def test_av1_sample_entry_properties():
         "compressorname": "AV1 Coding",
         "depth": 24,
     }
-    assert len(av01.children) == 1
+    assert len(av01.children) == 2
     assert isinstance(av01.children[0], AV1CodecConfigurationBox)
+    assert isinstance(av01.children[1], FieldHandlingBox)
 
 
 # ------------------------------------------------------------------------------

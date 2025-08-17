@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "mp4analyzer"
 description = "Lightweight MP4 box analyzer"
 readme = "README.md"
-license = { file = "LICENSE" } 
+license = "MIT"
 dynamic = ["version"]
 authors = [{ name = "Andrew Xin", email = "andrewx@bu.edu" }]
 requires-python = ">=3.11"

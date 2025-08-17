@@ -72,6 +72,9 @@ Download and run the executable from GitHub [Releases](https://github.com/andrew
 ### QuickTime Extensions
 `chpl`, `gmhd`, `gmin`, `text` (gmhd), `ilst`, `data`, `text` (sample entry)
 
+### TODO
+Add more boxes (e.g., VP9 codec, fragmented MP4, etc.)
+
 ## Development
 ```bash
 # Setup

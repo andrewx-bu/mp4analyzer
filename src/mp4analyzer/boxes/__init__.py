@@ -16,6 +16,8 @@ from .hdlr import HandlerBox
 from .mdia import MediaBox
 from .minf import MediaInformationBox
 from .meta import MetaBox
+from .ilst import IlstBox
+from .data import DataBox
 from .vmhd import VideoMediaHeaderBox
 from .smhd import SoundMediaHeaderBox
 from .dinf import DataInformationBox
@@ -61,6 +63,8 @@ __all__ = [
     "MediaBox",
     "MediaInformationBox",
     "MetaBox",
+    "IlstBox",
+    "DataBox",
     "VideoMediaHeaderBox",
     "SoundMediaHeaderBox",
     "DataInformationBox",

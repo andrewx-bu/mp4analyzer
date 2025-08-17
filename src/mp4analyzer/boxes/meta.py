@@ -24,11 +24,19 @@ class MetaBox(MP4Box):
         data: bytes,
         children: List[MP4Box] | None = None,
     ) -> "MetaBox":
-        version = data[0] if len(data) >= 1 else 0
-        flags = int.from_bytes(data[1:4], "big") if len(data) >= 4 else 0
+        header = data[:4]
+        version = header[0] if len(header) >= 1 else 0
+        flags = int.from_bytes(header[1:4], "big") if len(header) >= 4 else 0
         payload = data[4:] if len(data) > 4 else b""
         return cls(
-            box_type, size, offset, children or [], payload, version, flags, False
+            box_type,
+            size,
+            offset,
+            children or [],
+            payload,
+            version,
+            flags,
+            False,
         )
 
     def properties(self) -> Dict[str, object]:

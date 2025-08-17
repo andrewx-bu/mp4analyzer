@@ -18,6 +18,7 @@ from .boxes import (
     MediaBox,
     MediaInformationBox,
     MetaBox,
+    IlstBox,
     VideoMediaHeaderBox,
     SoundMediaHeaderBox,
     DataInformationBox,
@@ -61,7 +62,6 @@ CONTAINER_BOX_TYPES = {
     "traf",
     "mfra",
     "udta",
-    "ilst",
     "tref",
     "stsd",
     "sinf",
@@ -88,6 +88,7 @@ BOX_PARSERS: Dict[str, Type[MP4Box]] = {
     "hdlr": HandlerBox,
     "minf": MediaInformationBox,
     "meta": MetaBox,
+    "ilst": IlstBox,
     "vmhd": VideoMediaHeaderBox,
     "smhd": SoundMediaHeaderBox,
     "dinf": DataInformationBox,
@@ -128,10 +129,10 @@ def _read_u64(f: BinaryIO) -> int:
 
 
 def _parse_box(
-    f: BinaryIO, file_size: int, parent_end: int | None = None
+    f: BinaryIO, file_size: int, parent_end: int | None = None, stream_offset: int = 0
 ) -> MP4Box | None:
-    """Parse one box from file."""
-    start = f.tell()
+    """Parse one box from file or memory."""
+    start = stream_offset + f.tell()
     if parent_end and start >= parent_end:
         return None
 
@@ -156,14 +157,34 @@ def _parse_box(
     children, data = [], None
     if btype in {"dref", "stsd"}:
         data = f.read(min(8, payload_size))
-        while f.tell() < end:
-            child = _parse_box(f, file_size, end)
+        while f.tell() + stream_offset < end:
+            child = _parse_box(f, file_size, end, stream_offset)
             if not child:
                 break
             children.append(child)
+    elif btype == "meta":
+        import io
+
+        payload = f.read(payload_size)
+        header = payload[:4]
+        substream = io.BytesIO(payload[4:])
+        sub_offset = start + hdr_size + 4
+        sub_size = len(payload) - 4
+        sub_end = sub_offset + sub_size
+        while substream.tell() + sub_offset < sub_end:
+            child = _parse_box(
+                substream,
+                sub_end,
+                sub_end,
+                sub_offset,
+            )
+            if not child:
+                break
+            children.append(child)
+        data = payload
     elif btype in CONTAINER_BOX_TYPES and payload_size > 8:
-        while f.tell() < end:
-            child = _parse_box(f, file_size, end)
+        while f.tell() + stream_offset < end:
+            child = _parse_box(f, file_size, end, stream_offset)
             if not child:
                 break
             children.append(child)

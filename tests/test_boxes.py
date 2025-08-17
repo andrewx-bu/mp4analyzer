@@ -49,6 +49,7 @@ from src.mp4analyzer.boxes import (
     SampleToGroupBox,
     UserDataBox,
     ElementaryStreamDescriptorBox,
+    IlstBox,
 )
 
 # ------------------------------------------------------------------------------
@@ -66,7 +67,7 @@ def mk_box(type4: bytes, payload: bytes) -> bytes:
 # ------------------------------------------------------------------------------
 
 
-def test_box_properties():
+def test_box_properties(tmp_path):
     free = FreeSpaceBox("free", 8, 19061, [], b"")
     assert free.properties() == {
         "size": 8,
@@ -239,18 +240,49 @@ def test_box_properties():
         "322e3130 31"
     )
     meta_payload = bytes.fromhex(meta_payload_hex.replace(" ", ""))
-    meta = MetaBox.from_parsed(
-        "meta", 89, 1269622, b"\x00\x00\x00\x00" + meta_payload, []
+    meta_box = mk_box(b"meta", b"\x00\x00\x00\x00" + meta_payload)
+    mp4_path = tmp_path / "meta.mp4"
+    mp4_path.write_bytes(meta_box)
+
+    boxes = parse_mp4_boxes(str(mp4_path))
+    assert len(boxes) == 1
+    meta = boxes[0]
+    assert isinstance(meta, MetaBox)
+    assert [child.type for child in meta.children] == ["hdlr", "ilst"]
+    meta_props = meta.properties()
+    assert meta_props["size"] == 89
+    assert meta_props["flags"] == 0
+    assert meta_props["version"] == 0
+    assert meta_props["data"] == meta_payload_hex.strip()
+
+    ilst = meta.children[1]
+    assert isinstance(ilst, IlstBox)
+    expected_hex = (
+        "00000024 a9746f6f 0000001c 64617461 00000001 00000000 "
+        "4c617666 35392e32 2e313031"
     )
-    assert meta.properties() == {
-        "size": 89,
-        "flags": 0,
-        "version": 0,
-        "box_name": "MetaBox",
-        "isQT": False,
-        "start": 1269622,
-        "data": meta_payload_hex,
+    payload_bytes = b"\x00\x00\x00\x01\x00\x00\x00\x00Lavf59.2.101"
+    expected_props = {
+        "size": 44,
+        "box_name": "IlstBox",
+        "start": ilst.offset,
+        "data": expected_hex,
+        "list": {
+            str(0xA9746F6F): {
+                "size": 28,
+                "box_name": "DataBox",
+                "hdr_size": 8,
+                "start": ilst.offset + 16,
+                "data": {str(i): b for i, b in enumerate(payload_bytes)},
+                "valueType": 1,
+                "country": 0,
+                "language": 0,
+                "raw": {str(i): b for i, b in enumerate(b"Lavf59.2.101")},
+                "value": "Lavf59.2.101",
+            }
+        },
     }
+    assert ilst.properties() == expected_props
 
 
 def test_file_type_box_properties():

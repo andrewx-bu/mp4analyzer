@@ -100,7 +100,7 @@ def _format_properties(
                     lines.append(f"{prefix}{key_colored}: (empty)")
                 else:
                     hex_str = value.hex()
-                    groups = [hex_str[i:i+8] for i in range(0, len(hex_str), 8)]
+                    groups = [hex_str[i : i + 8] for i in range(0, len(hex_str), 8)]
 
                     # Print first line with key
                     first = " ".join(groups[:8])
@@ -111,11 +111,11 @@ def _format_properties(
 
                     # Remaining lines
                     for i in range(8, len(groups), 8):
-                        chunk = " ".join(groups[i:i+8])
+                        chunk = " ".join(groups[i : i + 8])
                         lines.append(f"{cont_prefix}{chunk}")
             else:
                 preview = value[:16].hex()
-                groups = [preview[i:i+8] for i in range(0, len(preview), 8)]
+                groups = [preview[i : i + 8] for i in range(0, len(preview), 8)]
                 lines.append(
                     f"{prefix}{key_colored}: {' '.join(groups)}... ({len(value)} bytes)"
                 )
@@ -124,7 +124,10 @@ def _format_properties(
             display_value = str(value)
             if len(display_value) > 80:
                 wrapped = textwrap.wrap(
-                    display_value, width=80, break_long_words=False, break_on_hyphens=False
+                    display_value,
+                    width=80,
+                    break_long_words=False,
+                    break_on_hyphens=False,
                 )
                 lines.append(f"{prefix}{key_colored}: {wrapped[0]}")
                 for segment in wrapped[1:]:

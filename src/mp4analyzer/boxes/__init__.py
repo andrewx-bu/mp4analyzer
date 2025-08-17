@@ -7,6 +7,7 @@ from .tkhd import TrackHeaderBox
 from .mdhd import MediaHeaderBox
 from .iods import ObjectDescriptorBox
 from .moov import MovieBox
+from .mvex import MovieExtendsBox
 from .trak import TrackBox
 from .free import FreeSpaceBox
 from .mdat import MediaDataBox
@@ -61,6 +62,7 @@ __all__ = [
     "MediaHeaderBox",
     "ObjectDescriptorBox",
     "MovieBox",
+    "MovieExtendsBox",
     "TrackBox",
     "FreeSpaceBox",
     "MediaDataBox",

@@ -17,6 +17,7 @@ from src.mp4analyzer.boxes import (
     TrackHeaderBox,
     ObjectDescriptorBox,
     MovieBox,
+    MovieExtendsBox,
     EditBox,
     EditListBox,
     HandlerBox,
@@ -998,6 +999,28 @@ def test_movie_box_parsing(tmp_path):
     assert moov.properties() == {
         "size": len(moov_box),
         "box_name": "MovieBox",
+        "start": 0,
+    }
+
+
+def test_movie_extends_box(tmp_path):
+    trex_payload = b"\x00" * 20
+    trex_box = mk_box(b"trex", trex_payload)
+    mvex_box = mk_box(b"mvex", trex_box)
+
+    mp4_path = tmp_path / "mvex.mp4"
+    mp4_path.write_bytes(mvex_box)
+
+    boxes = parse_mp4_boxes(str(mp4_path))
+    assert len(boxes) == 1
+
+    mvex = boxes[0]
+    assert isinstance(mvex, MovieExtendsBox)
+    assert len(mvex.children) == 1
+    assert mvex.children[0].type == "trex"
+    assert mvex.properties() == {
+        "size": len(mvex_box),
+        "box_name": "MovieExtendsBox",
         "start": 0,
     }
 

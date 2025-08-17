@@ -79,7 +79,10 @@ def _format_properties(
                                 line = f"{prefix}    {item} "
                             else:
                                 line += f"{item} "
-                        lines.append(line.rstrip())
+                        line = line.rstrip()
+                        if line.endswith(","):
+                            line = line[:-1]
+                        lines.append(line)
                         lines.append(f"{prefix}]")
                     else:
                         lines.append(f"{prefix}{key_colored}: [{value_str}]")

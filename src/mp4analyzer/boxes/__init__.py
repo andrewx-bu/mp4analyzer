@@ -29,9 +29,11 @@ from .stbl import SampleTableBox
 from .stsd import SampleDescriptionBox
 from .avc1 import AVCSampleEntry
 from .hev1 import HEVCSampleEntry
+from .av01 import AV1SampleEntry
 from .mp4a import MP4AudioSampleEntry
 from .avcc import AVCConfigurationBox
 from .hvcc import HEVCConfigurationBox
+from .av1c import AV1CodecConfigurationBox
 from .btrt import BitRateBox
 from .colr import ColourInformationBox
 from .pasp import PixelAspectRatioBox
@@ -81,9 +83,11 @@ __all__ = [
     "SampleDescriptionBox",
     "AVCSampleEntry",
     "HEVCSampleEntry",
+    "AV1SampleEntry",
     "MP4AudioSampleEntry",
     "AVCConfigurationBox",
     "HEVCConfigurationBox",
+    "AV1CodecConfigurationBox",
     "BitRateBox",
     "ColourInformationBox",
     "PixelAspectRatioBox",

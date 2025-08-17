@@ -67,7 +67,7 @@ Download and run the executable from GitHub [Releases](https://github.com/andrew
 ## Supported Box Types
 
 ### ISO Base Media (MP4)
-`ftyp`, `moov`, `mvhd`, `trak`, `tkhd`, `mdia`, `mdhd`, `iods`, `edts`, `elst`, `hdlr`, `minf`, `vmhd`, `smhd`, `dinf`, `dref`, `url `, `stbl`, `stsd`, `avc1`, `avcC`, `colr`, `pasp`, `btrt`, `hev1`, `hvcC`, `mp4a`, `esds`, `mdat`, `free`, `stts`, `ctts`, `stss`, `sdtp`, `stsc`, `stsz`, `stco`, `sgpd`, `sbgp`, `meta`, `tref`, `udta`
+`ftyp`, `moov`, `mvhd`, `trak`, `tkhd`, `mdia`, `mdhd`, `iods`, `edts`, `elst`, `hdlr`, `minf`, `vmhd`, `smhd`, `dinf`, `dref`, `url `, `stbl`, `stsd`, `avc1`, `avcC`, `colr`, `pasp`, `btrt`, `hev1`, `hvcC`, `av01`, `av1C`, `mp4a`, `esds`, `mdat`, `free`, `stts`, `ctts`, `stss`, `sdtp`, `stsc`, `stsz`, `stco`, `sgpd`, `sbgp`, `meta`, `tref`, `udta`
 
 ### QuickTime Extensions
 `chpl`, `gmhd`, `gmin`, `text` (gmhd), `ilst`, `data`, `text` (sample entry)

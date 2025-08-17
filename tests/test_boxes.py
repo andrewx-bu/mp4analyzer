@@ -34,9 +34,11 @@ from src.mp4analyzer.boxes import (
     SampleDescriptionBox,
     AVCSampleEntry,
     HEVCSampleEntry,
+    AV1SampleEntry,
     MP4AudioSampleEntry,
     AVCConfigurationBox,
     HEVCConfigurationBox,
+    AV1CodecConfigurationBox,
     BitRateBox,
     ColourInformationBox,
     PixelAspectRatioBox,
@@ -856,6 +858,71 @@ def test_avc_sample_entry_properties():
         "samplesize": 16,
         "samplerate": 48000,
     }
+
+
+def test_av1_codec_configuration_box_properties():
+    payload = bytes([0x81, 0x2A, 0xCA, 0x15, 0x01, 0x02, 0x03])
+    av1c = AV1CodecConfigurationBox.from_parsed(
+        "av1C", 8 + len(payload), 500, payload, []
+    )
+    assert av1c.properties() == {
+        "size": 8 + len(payload),
+        "box_name": "AV1CodecConfigurationBox",
+        "start": 500,
+        "configurationVersion": 1,
+        "seq_profile": 1,
+        "seq_level_idx_0": 10,
+        "seq_tier_0": 1,
+        "high_bitdepth": 1,
+        "twelve_bit": 0,
+        "monochrome": 0,
+        "chroma_subsampling_x": 1,
+        "chroma_subsampling_y": 0,
+        "chroma_sample_position": 2,
+        "initial_presentation_delay_present": 1,
+        "initial_presentation_delay_minus_one": 5,
+        "configOBUs": [1, 2, 3],
+    }
+
+
+def test_av1_sample_entry_properties():
+    av1c_payload = bytes([0x81, 0x2A, 0xCA, 0x15, 0x01, 0x02, 0x03])
+    av1c_box = mk_box(b"av1C", av1c_payload)
+
+    name = b"AV1 Coding"
+    compressor_field = bytes([len(name)]) + name + b"\x00" * (31 - len(name))
+    header = (
+        b"\x00" * 6
+        + struct.pack(">H", 1)  # data_reference_index
+        + b"\x00" * 16
+        + struct.pack(">H", 1280)
+        + struct.pack(">H", 720)
+        + struct.pack(">I", 4718592)
+        + struct.pack(">I", 4718592)
+        + b"\x00" * 4
+        + struct.pack(">H", 1)  # frame_count
+        + compressor_field
+        + struct.pack(">H", 24)  # depth
+        + b"\xff\xff"
+    )
+    av01_payload = header + av1c_box
+    av01_size = 8 + len(av01_payload)
+    av01 = AV1SampleEntry.from_parsed("av01", av01_size, 2000, av01_payload, [])
+    assert av01.properties() == {
+        "size": av01_size,
+        "box_name": "AV1SampleEntry",
+        "start": 2000,
+        "data_reference_index": 1,
+        "width": 1280,
+        "height": 720,
+        "horizresolution": 4718592,
+        "vertresolution": 4718592,
+        "frame_count": 1,
+        "compressorname": "AV1 Coding",
+        "depth": 24,
+    }
+    assert len(av01.children) == 1
+    assert isinstance(av01.children[0], AV1CodecConfigurationBox)
 
 
 # ------------------------------------------------------------------------------

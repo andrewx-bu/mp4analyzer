@@ -32,6 +32,8 @@ from .avc1 import AVCSampleEntry
 from .hev1 import HEVCSampleEntry
 from .av01 import AV1SampleEntry
 from .mp4a import MP4AudioSampleEntry
+from .ac4 import AC4SampleEntry
+from .dac4 import DAC4Box
 from .avcc import AVCConfigurationBox
 from .hvcc import HEVCConfigurationBox
 from .av1c import AV1CodecConfigurationBox
@@ -88,6 +90,8 @@ __all__ = [
     "HEVCSampleEntry",
     "AV1SampleEntry",
     "MP4AudioSampleEntry",
+    "AC4SampleEntry",
+    "DAC4Box",
     "AVCConfigurationBox",
     "HEVCConfigurationBox",
     "AV1CodecConfigurationBox",

@@ -37,6 +37,8 @@ from src.mp4analyzer.boxes import (
     HEVCSampleEntry,
     AV1SampleEntry,
     MP4AudioSampleEntry,
+    AC4SampleEntry,
+    DAC4Box,
     AVCConfigurationBox,
     HEVCConfigurationBox,
     AV1CodecConfigurationBox,
@@ -880,6 +882,49 @@ def test_avc_sample_entry_properties():
         "channel_count": 2,
         "samplesize": 16,
         "samplerate": 48000,
+    }
+
+
+def test_ac4_sample_entry_properties():
+    ac4_header = (
+        b"\x00" * 6
+        + struct.pack(">H", 1)
+        + struct.pack(">H", 0)
+        + b"\x00\x00"
+        + b"\x00\x00\x00\x00"
+        + struct.pack(">H", 2)
+        + struct.pack(">H", 16)
+        + b"\x00\x00"
+        + b"\x00\x00"
+        + struct.pack(">I", 48000 << 16)
+    )
+    dac4_payload = bytes.fromhex(
+        "20a40140 0000001f ffffffe0 010ff880 00004200 00025010 00000300 80".replace(
+            " ", ""
+        )
+    )
+    dac4_box = struct.pack(">I4s", 8 + len(dac4_payload), b"dac4") + dac4_payload
+    ac4_payload = ac4_header + dac4_box
+    ac4 = AC4SampleEntry.from_parsed("ac-4", 8 + len(ac4_payload), 425, ac4_payload, [])
+    assert ac4.properties() == {
+        "size": 8 + len(ac4_payload),
+        "box_name": "AC4SampleEntry",
+        "start": 425,
+        "data_reference_index": 1,
+        "version": 0,
+        "channel_count": 2,
+        "samplesize": 16,
+        "samplerate": 48000,
+    }
+    assert len(ac4.children) == 1
+    dac4 = ac4.children[0]
+    assert isinstance(dac4, DAC4Box)
+    assert dac4.properties() == {
+        "size": 8 + len(dac4_payload),
+        "box_name": "DAC4Box",
+        "start": 461,
+        "has_unparsed_data": True,
+        "data": "20a40140 0000001f ffffffe0 010ff880 00004200 00025010 00000300 80",
     }
 
 

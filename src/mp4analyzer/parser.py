@@ -31,6 +31,7 @@ from .boxes import (
     HEVCSampleEntry,
     AV1SampleEntry,
     MP4AudioSampleEntry,
+    AC4SampleEntry,
     AVCConfigurationBox,
     HEVCConfigurationBox,
     AV1CodecConfigurationBox,
@@ -54,6 +55,7 @@ from .boxes import (
     ChapterListBox,
     TextSampleEntry,
     GenericMediaHeaderBox,
+    DAC4Box,
 )
 
 # Box types that can contain children
@@ -111,6 +113,7 @@ BOX_PARSERS: Dict[str, Type[MP4Box]] = {
     "hev1": HEVCSampleEntry,
     "av01": AV1SampleEntry,
     "mp4a": MP4AudioSampleEntry,
+    "ac-4": AC4SampleEntry,
     "avcC": AVCConfigurationBox,
     "hvcC": HEVCConfigurationBox,
     "av1C": AV1CodecConfigurationBox,
@@ -132,6 +135,7 @@ BOX_PARSERS: Dict[str, Type[MP4Box]] = {
     "chpl": ChapterListBox,
     "text": TextSampleEntry,
     "gmhd": GenericMediaHeaderBox,
+    "dac4": DAC4Box,
 }
 
 # Keep raw payloads for later

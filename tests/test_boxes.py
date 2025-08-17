@@ -18,6 +18,8 @@ from src.mp4analyzer.boxes import (
     ObjectDescriptorBox,
     MovieBox,
     MovieExtendsBox,
+    MovieExtendsHeaderBox,
+    TrackExtendsBox,
     EditBox,
     EditListBox,
     HandlerBox,
@@ -996,6 +998,43 @@ def test_av1_sample_entry_properties():
     assert isinstance(av01.children[1], FieldHandlingBox)
 
 
+def test_movie_extends_header_box_properties():
+    payload = b"\x00\x00\x00\x00" + struct.pack(">I", 32000)
+    mehd = MovieExtendsHeaderBox.from_parsed("mehd", 16, 1068, payload, [])
+    assert mehd.properties() == {
+        "size": 16,
+        "flags": 0,
+        "version": 0,
+        "box_name": "MovieExtendsHeaderBox",
+        "start": 1068,
+        "fragment_duration": 32000,
+    }
+
+
+def test_track_extends_box_properties():
+    payload = (
+        b"\x00\x00\x00\x00"
+        + struct.pack(">I", 1)
+        + struct.pack(">I", 1)
+        + struct.pack(">I", 0)
+        + struct.pack(">I", 0)
+        + struct.pack(">I", 0)
+    )
+    trex = TrackExtendsBox.from_parsed("trex", 32, 1084, payload, [])
+    assert trex.properties() == {
+        "size": 32,
+        "flags": 0,
+        "version": 0,
+        "box_name": "TrackExtendsBox",
+        "start": 1084,
+        "track_id": 1,
+        "default_sample_description_index": 1,
+        "default_sample_duration": 0,
+        "default_sample_size": 0,
+        "default_sample_flags": 0,
+    }
+
+
 # ------------------------------------------------------------------------------
 # Small integration tests: parse synthetic MP4 fragments
 # ------------------------------------------------------------------------------
@@ -1049,9 +1088,18 @@ def test_movie_box_parsing(tmp_path):
 
 
 def test_movie_extends_box(tmp_path):
-    trex_payload = b"\x00" * 20
+    mehd_payload = b"\x00\x00\x00\x00" + struct.pack(">I", 32000)
+    mehd_box = mk_box(b"mehd", mehd_payload)
+    trex_payload = (
+        b"\x00\x00\x00\x00"
+        + struct.pack(">I", 1)
+        + struct.pack(">I", 1)
+        + struct.pack(">I", 0)
+        + struct.pack(">I", 0)
+        + struct.pack(">I", 0)
+    )
     trex_box = mk_box(b"trex", trex_payload)
-    mvex_box = mk_box(b"mvex", trex_box)
+    mvex_box = mk_box(b"mvex", mehd_box + trex_box)
 
     mp4_path = tmp_path / "mvex.mp4"
     mp4_path.write_bytes(mvex_box)
@@ -1061,8 +1109,31 @@ def test_movie_extends_box(tmp_path):
 
     mvex = boxes[0]
     assert isinstance(mvex, MovieExtendsBox)
-    assert len(mvex.children) == 1
-    assert mvex.children[0].type == "trex"
+    assert len(mvex.children) == 2
+    mehd = mvex.children[0]
+    trex = mvex.children[1]
+    assert isinstance(mehd, MovieExtendsHeaderBox)
+    assert isinstance(trex, TrackExtendsBox)
+    assert mehd.properties() == {
+        "size": len(mehd_box),
+        "flags": 0,
+        "version": 0,
+        "box_name": "MovieExtendsHeaderBox",
+        "start": 8,
+        "fragment_duration": 32000,
+    }
+    assert trex.properties() == {
+        "size": len(trex_box),
+        "flags": 0,
+        "version": 0,
+        "box_name": "TrackExtendsBox",
+        "start": 24,
+        "track_id": 1,
+        "default_sample_description_index": 1,
+        "default_sample_duration": 0,
+        "default_sample_size": 0,
+        "default_sample_flags": 0,
+    }
     assert mvex.properties() == {
         "size": len(mvex_box),
         "box_name": "MovieExtendsBox",

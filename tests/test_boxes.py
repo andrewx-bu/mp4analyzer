@@ -52,6 +52,11 @@ from src.mp4analyzer.boxes import (
     UserDataBox,
     ElementaryStreamDescriptorBox,
     IlstBox,
+    ChapterListBox,
+    TextSampleEntry,
+    GenericMediaHeaderBox,
+    GenericMediaInfoBox,
+    TextMediaHeaderBox,
 )
 
 # ------------------------------------------------------------------------------
@@ -344,6 +349,66 @@ def test_pixel_aspect_ratio_box_properties():
         "hSpacing": 1,
         "vSpacing": 1,
     }
+
+
+def test_chapter_list_box_properties():
+    payload = (
+        b"\x01\x00\x00\x00"  # version/flags
+        + struct.pack(">I", 1)  # entry count
+        + struct.pack(">I", 0)  # start time
+        + struct.pack(">I", 0)  # duration
+        + b"\x05Intro"  # name length + name
+    )
+    chpl = ChapterListBox.from_parsed("chpl", 8 + len(payload), 0, payload, [])
+    assert chpl.properties() == {
+        "size": 8 + len(payload),
+        "box_name": "ChapterListBox",
+        "start": 0,
+        "version": 1,
+        "flags": 0,
+        "chapters": [{"start_time": 0, "duration": 0, "title": "Intro"}],
+    }
+
+
+def test_text_sample_entry_properties():
+    payload = b"\x00" * 6 + b"\x00\x01" + b"\x00\x00\x00\x01"
+    text = TextSampleEntry.from_parsed("text", 8 + len(payload), 0, payload, [])
+    assert text.properties() == {
+        "size": 8 + len(payload),
+        "box_name": "TextSampleEntry",
+        "start": 0,
+        "data_reference_index": 1,
+        "data": "00000001",
+    }
+
+
+def test_generic_media_header_box_parsing():
+    gmin_payload = (
+        b"\x00\x00\x00\x00"  # version/flags
+        + struct.pack(">H", 64)
+        + struct.pack(">HHH", 0x8000, 0x8000, 0)
+        + struct.pack(">HH", 0, 0)
+    )
+    gmin_box = struct.pack(">I4s", 8 + len(gmin_payload), b"gmin") + gmin_payload
+
+    text_payload = (
+        b"\x00\x00\x00\x00" + struct.pack(">I", 1) + struct.pack(">I", 0) + b"\x00" * 20
+    )
+    text_box = struct.pack(">I4s", 8 + len(text_payload), b"text") + text_payload
+
+    gmhd_payload = gmin_box + text_box
+    gmhd = GenericMediaHeaderBox.from_parsed(
+        "gmhd", 8 + len(gmhd_payload), 0, gmhd_payload, []
+    )
+    assert gmhd.properties() == {
+        "size": 8 + len(gmhd_payload),
+        "box_name": "GenericMediaHeaderBox",
+        "start": 0,
+    }
+    assert isinstance(gmhd.children[0], GenericMediaInfoBox)
+    assert gmhd.children[0].properties()["graphics_mode"] == 64
+    assert isinstance(gmhd.children[1], TextMediaHeaderBox)
+    assert gmhd.children[1].properties()["display_flags"] == 1
 
 
 def test_hevc_configuration_box_properties():

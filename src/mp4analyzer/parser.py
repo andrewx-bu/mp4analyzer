@@ -47,6 +47,9 @@ from .boxes import (
     TrackReferenceBox,
     TrackReferenceTypeBox,
     ElementaryStreamDescriptorBox,
+    ChapterListBox,
+    TextSampleEntry,
+    GenericMediaHeaderBox,
 )
 
 # Box types that can contain children
@@ -118,6 +121,9 @@ BOX_PARSERS: Dict[str, Type[MP4Box]] = {
     "sgpd": SampleGroupDescriptionBox,
     "sbgp": SampleToGroupBox,
     "chap": TrackReferenceTypeBox,
+    "chpl": ChapterListBox,
+    "text": TextSampleEntry,
+    "gmhd": GenericMediaHeaderBox,
 }
 
 # Keep raw payloads for later

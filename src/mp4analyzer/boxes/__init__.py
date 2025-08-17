@@ -45,6 +45,9 @@ from .stsz import SampleSizeBox
 from .stco import ChunkOffsetBox
 from .sgpd import SampleGroupDescriptionBox
 from .sbgp import SampleToGroupBox
+from .chpl import ChapterListBox
+from .text import TextSampleEntry
+from .gmhd import GenericMediaHeaderBox, GenericMediaInfoBox, TextMediaHeaderBox
 
 
 __all__ = [
@@ -94,4 +97,9 @@ __all__ = [
     "ChunkOffsetBox",
     "SampleGroupDescriptionBox",
     "SampleToGroupBox",
+    "ChapterListBox",
+    "TextSampleEntry",
+    "GenericMediaHeaderBox",
+    "GenericMediaInfoBox",
+    "TextMediaHeaderBox",
 ]

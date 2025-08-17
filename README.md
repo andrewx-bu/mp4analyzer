@@ -2,7 +2,6 @@
 ![CI](https://github.com/andrewx-bu/mp4analyzer/actions/workflows/ci.yml/badge.svg)
 ![Release](https://github.com/andrewx-bu/mp4analyzer/actions/workflows/release.yml/badge.svg)
 ![PyPI - Version](https://img.shields.io/pypi/v/mp4analyzer?label=PyPI&color=blue "https://pypi.org/project/mp4analyzer/")
-![Code style: black](https://img.shields.io/badge/code%20style-black-black "https://github.com/psf/black")
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg "https://opensource.org/licenses/MIT")
 
 Tool for analyzing MP4 files, providing both command-line box parsing and GUI-based frame-level analysis.
@@ -63,10 +62,15 @@ Examples:
 ```
 
 ### GUI Application
-Download and run the executable from GitHub [Releases](https://github.com/andrewx-bu/mp4analyzer/releases). The application will not run without FFmpeg.
+Download and run the executable from GitHub [Releases](https://github.com/andrewx-bu/mp4analyzer/releases). The application will not run without FFmpeg. Works best with files < 100 MB.
 
-## Supported MP4 Boxes
-Currently parsed box types: `ftyp`, `moov`, `mvhd`, `trak`, `tkhd`, `mdhd`, `iods`, `edts`, `elst`, `hdlr`, `minf`, `vmhd`, `smhd`, `dinf`, `dref`, `url `, `stbl`, `stsd`, `avc1`, `avcC`, `colr`, `pasp`, `mp4a`, `esds`, `mdat`, `free`, `stts`, `ctts`, `stss`, `sdtp`, `stsc`, `stsz`, `stco`, `sgpd`, `sbgp`
+## Supported Box Types
+
+### ISO Base Media (MP4)
+`ftyp`, `moov`, `mvhd`, `trak`, `tkhd`, `mdia`, `mdhd`, `iods`, `edts`, `elst`, `hdlr`, `minf`, `vmhd`, `smhd`, `dinf`, `dref`, `url `, `stbl`, `stsd`, `avc1`, `avcC`, `colr`, `pasp`, `btrt`, `hev1`, `hvcC`, `mp4a`, `esds`, `mdat`, `free`, `stts`, `ctts`, `stss`, `sdtp`, `stsc`, `stsz`, `stco`, `sgpd`, `sbgp`, `meta`, `tref`, `udta`
+
+### QuickTime Extensions
+`chpl`, `gmhd`, `gmin`, `text` (gmhd), `ilst`, `data`, `text` (sample entry)
 
 ## Development
 ```bash

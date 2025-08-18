@@ -1194,6 +1194,64 @@ def test_movie_fragment_box(tmp_path):
     }
 
 
+def test_track_fragment_and_header_boxes(tmp_path):
+    tfhd_payload = (
+        b"\x00"  # version
+        + (131114).to_bytes(3, "big")  # flags 0x2002A
+        + struct.pack(">I", 2)  # track_id
+        + struct.pack(">I", 1)  # default_sample_description_index
+        + struct.pack(">I", 1000)  # default_sample_duration
+        + struct.pack(">I", 16842752)  # default_sample_flags
+    )
+    tfhd_box1 = mk_box(b"tfhd", tfhd_payload)
+    trun_box1 = mk_box(b"trun", b"\x00\x00\x00\x00" + struct.pack(">I", 798))
+    traf_box1 = mk_box(b"traf", tfhd_box1 + trun_box1)
+
+    tfhd_box2 = mk_box(b"tfhd", tfhd_payload)
+    trun_box2 = mk_box(b"trun", b"\x00\x00\x00\x00" + struct.pack(">I", 25))
+    traf_box2 = mk_box(b"traf", tfhd_box2 + trun_box2)
+
+    mfhd_box1 = mk_box(b"mfhd", b"\x00\x00\x00\x00" + struct.pack(">I", 1))
+    moof_box1 = mk_box(b"moof", mfhd_box1 + traf_box1)
+
+    mfhd_box2 = mk_box(b"mfhd", b"\x00\x00\x00\x00" + struct.pack(">I", 2))
+    moof_box2 = mk_box(b"moof", mfhd_box2 + traf_box2)
+
+    mp4_path = tmp_path / "traf.mp4"
+    mp4_path.write_bytes(moof_box1 + moof_box2)
+
+    boxes = parse_mp4_boxes(str(mp4_path))
+    assert len(boxes) == 2
+    moof2 = boxes[1]
+    assert isinstance(moof2, MovieFragmentBox)
+    traf2 = moof2.children[1]
+    assert isinstance(traf2, TrackFragmentBox)
+    tfhd2 = traf2.children[0]
+    assert isinstance(tfhd2, TrackFragmentHeaderBox)
+
+    assert tfhd2.properties() == {
+        "size": len(tfhd_box2),
+        "flags": 131114,
+        "version": 0,
+        "box_name": "TrackFragmentHeaderBox",
+        "start": tfhd2.offset,
+        "track_id": 2,
+        "base_data_offset": 0,
+        "default_sample_description_index": 1,
+        "default_sample_duration": 1000,
+        "default_sample_size": 0,
+        "default_sample_flags": 16842752,
+    }
+
+    assert traf2.properties() == {
+        "size": len(traf_box2),
+        "box_name": "TrackFragmentBox",
+        "start": traf2.offset,
+        "sample_number": 25,
+        "first_sample_index": 799,
+    }
+
+
 def test_track_box_aggregation(tmp_path):
     # stts (time-to-sample)
     stts_payload = (

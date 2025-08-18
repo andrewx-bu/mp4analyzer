@@ -37,14 +37,18 @@ class TrackFragmentBox(MP4Box):
         counter = _TRACK_SAMPLE_COUNTER.get(track_id, 0)
         first_sample_index = counter + 1 if track_id else 0
         _TRACK_SAMPLE_COUNTER[track_id] = counter + sample_number
-        return cls(box_type, size, offset, children, None, sample_number, first_sample_index)
+        return cls(
+            box_type, size, offset, children, None, sample_number, first_sample_index
+        )
 
     def properties(self) -> Dict[str, object]:
         props = super().properties()
-        props.update({
-            "sample_number": self.sample_number,
-            "first_sample_index": self.first_sample_index,
-        })
+        props.update(
+            {
+                "sample_number": self.sample_number,
+                "first_sample_index": self.first_sample_index,
+            }
+        )
         return props
 
     @classmethod

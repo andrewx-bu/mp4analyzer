@@ -40,7 +40,9 @@ class TrackFragmentHeaderBox(MP4Box):
             pos += 8
         default_sample_description_index = 0
         if flags & 0x2:
-            default_sample_description_index = struct.unpack(">I", data[pos : pos + 4])[0]
+            default_sample_description_index = struct.unpack(">I", data[pos : pos + 4])[
+                0
+            ]
             pos += 4
         default_sample_duration = 0
         if flags & 0x8:

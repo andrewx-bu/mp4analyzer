@@ -80,96 +80,55 @@ def extract_metadata(file_path: str) -> Optional[VideoMetadata]:
         return None
 
 
-def parse_frames(
-    file_path: str,
-) -> Tuple[Optional[VideoMetadata], List[FrameData], List[float]]:
+def parse_frames_optimized(file_path: str) -> Tuple[Optional[VideoMetadata], List[FrameData], List[float]]:
     """
-    Parse per-frame metadata:
-      - pts (ticks), decode order (packet order), timestamp (sec).
-      - motion vector info to detect forward/backward references.
+    Parse per-frame metadata with consolidated FFmpeg calls for better performance.
     """
     metadata = extract_metadata(file_path)
     if not metadata:
         return None, [], []
 
-    def _run(cmd):
-        return _run_ffmpeg_cmd(cmd) or ""
-
-    # --- Stream time base (to convert ticks → seconds) ---
-    tb_cmd = [
+    # Single consolidated FFmpeg call with all required data
+    cmd = [
         "ffprobe",
-        "-v",
-        "error",
-        "-select_streams",
-        "v:0",
-        "-show_entries",
-        "stream=time_base",
-        "-of",
-        "json",
+        "-v", "error",
+        "-select_streams", "v:0",
+        "-export_side_data", "+mvs",
+        "-show_entries", 
+        "stream=time_base:packet=pos,flags,size:frame=pkt_pos,pict_type,pkt_size,pkt_pts,pkt_dts,best_effort_timestamp,side_data_list",
+        "-of", "json",
         file_path,
     ]
-    tb_json = {}
+    
+    output = _run_ffmpeg_cmd(cmd)
+    if not output:
+        return metadata, [], []
+    
     try:
-        tb_json = json.loads(_run(tb_cmd)) or {}
+        data = json.loads(output)
+        stream_data = data.get("streams", [{}])[0] if data.get("streams") else {}
+        packets = data.get("packets", [])
+        frames = data.get("frames", [])
+        
+        # Process time base
+        tb_str = stream_data.get("time_base", "1/1")
+        try:
+            tb_num, tb_den = map(int, tb_str.split("/"))
+        except Exception:
+            tb_num, tb_den = 1, 1
+        
+        # Build position to decode index mapping
+        pos_to_decode_idx = {}
+        for i, p in enumerate(packets):
+            pos = p.get("pos")
+            if pos not in (None, "N/A"):
+                try:
+                    pos_to_decode_idx[int(pos)] = i
+                except Exception:
+                    continue
+        
     except Exception:
-        pass
-    tb_str = ((tb_json.get("streams") or [{}])[0]).get("time_base", "1/1")
-    try:
-        tb_num, tb_den = map(int, tb_str.split("/"))
-    except Exception:
-        tb_num, tb_den = 1, 1
-
-    # --- Packets (file pos → decode order index) ---
-    pkt_cmd = [
-        "ffprobe",
-        "-v",
-        "error",
-        "-select_streams",
-        "v:0",
-        "-show_entries",
-        "packet=pos,flags,size",
-        "-of",
-        "json",
-        file_path,
-    ]
-    pkt_json = {}
-    try:
-        pkt_json = json.loads(_run(pkt_cmd)) or {}
-    except Exception:
-        pass
-    packets = pkt_json.get("packets", []) or []
-
-    pos_to_decode_idx = {}
-    for i, p in enumerate(packets):
-        pos = p.get("pos")
-        if pos not in (None, "N/A"):
-            try:
-                pos_to_decode_idx[int(pos)] = i
-            except Exception:
-                continue
-
-    # --- Frame-level data (pts, type, size, mv side-data) ---
-    frm_cmd = [
-        "ffprobe",
-        "-v",
-        "error",
-        "-select_streams",
-        "v:0",
-        "-export_side_data",
-        "+mvs",
-        "-show_entries",
-        "frame=pkt_pos,pict_type,pkt_size,pkt_pts,pkt_dts,"
-        "best_effort_timestamp,side_data_list",
-        "-of",
-        "json",
-        file_path,
-    ]
-    frames_json = {}
-    try:
-        frames_json = json.loads(_run(frm_cmd)) or {}
-    except Exception:
-        pass
-    frames = frames_json.get("frames", []) or []
+        return metadata, [], []
 
     def to_int(x, default=None):
         if x is None or x == "N/A":
@@ -282,6 +241,12 @@ def parse_frames(
             fr.ref_next = next_map[i] if fut else None
 
     return metadata, frame_data, timestamps
+
+
+# Keep original function for backward compatibility
+def parse_frames(file_path: str) -> Tuple[Optional[VideoMetadata], List[FrameData], List[float]]:
+    """Legacy function - use parse_frames_optimized for better performance."""
+    return parse_frames_optimized(file_path)
 
 
 def check_ffmpeg() -> Tuple[bool, bool]:

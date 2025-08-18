@@ -1,8 +1,9 @@
 # Main window for MP4 Analyzer application.
 from typing import Optional
-from PyQt6.QtCore import Qt, QEvent
+from PyQt6.QtCore import Qt, QEvent, QThread, pyqtSignal, QThreadPool, QRunnable, QObject
 from PyQt6.QtGui import QPixmap, QAction
-from PyQt6.QtWidgets import QMainWindow, QFileDialog, QMessageBox
+from PyQt6.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QProgressDialog
+import concurrent.futures
 from models import VideoMetadata, LazyVideoFrameCollection
 from video_loader import VideoLoader, VideoLoaderError
 from ui.ui_components import (
@@ -12,6 +13,86 @@ from ui.ui_components import (
     RightPanelWidget,
 )
 from src.mp4analyzer import parse_mp4_boxes, generate_movie_info
+
+
+class FrameLoaderSignals(QObject):
+    """Signals for frame loading workers."""
+    frame_loaded = pyqtSignal(int, object)  # index, QImage
+
+class FrameLoaderWorker(QRunnable):
+    """Worker for loading individual frames."""
+    def __init__(self, frame_collection, index, signals):
+        super().__init__()
+        self.frame_collection = frame_collection
+        self.index = index
+        self.signals = signals
+        
+    def run(self):
+        """Load frame in background."""
+        if self.frame_collection and not self.frame_collection.is_empty:
+            frame = self.frame_collection.get_frame(self.index)
+            if frame:
+                self.signals.frame_loaded.emit(self.index, frame)
+
+class FrameLoaderThread(QThread):
+    """Background thread pool manager for frame loading."""
+    frame_loaded = pyqtSignal(int, object)  # index, QImage
+    
+    def __init__(self, frame_collection):
+        super().__init__()
+        self.frame_collection = frame_collection
+        self.requested_frames = []
+        self._running = True
+        self.thread_pool = QThreadPool()
+        self.thread_pool.setMaxThreadCount(3)  # Limit concurrent decoding
+        self.signals = FrameLoaderSignals()
+        self.signals.frame_loaded.connect(self.frame_loaded.emit)
+        
+    def request_frame(self, index: int):
+        """Request frame loading in background."""
+        if index not in self.requested_frames:
+            self.requested_frames.append(index)
+    
+    def stop(self):
+        """Stop the thread gracefully."""
+        self._running = False
+        self.thread_pool.waitForDone(1000)  # Wait up to 1 second
+        self.quit()
+        self.wait()
+    
+    def run(self):
+        """Background frame loading loop with thread pool."""
+        while self._running:
+            if not self.requested_frames:
+                self.msleep(50)  # Wait 50ms before checking again
+                continue
+                
+            index = self.requested_frames.pop(0)
+            worker = FrameLoaderWorker(self.frame_collection, index, self.signals)
+            self.thread_pool.start(worker)
+
+
+class VideoLoadWorker(QThread):
+    """Background thread for video loading."""
+    video_loaded = pyqtSignal(object, object)  # metadata, frame_collection
+    loading_progress = pyqtSignal(str)  # progress message
+    loading_error = pyqtSignal(str)  # error message
+    
+    def __init__(self, file_path, video_loader):
+        super().__init__()
+        self.file_path = file_path
+        self.video_loader = video_loader
+        
+    def run(self):
+        """Load video in background."""
+        try:
+            self.loading_progress.emit("Loading video metadata...")
+            metadata, frame_collection = self.video_loader.load_video_file(self.file_path)
+            self.video_loaded.emit(metadata, frame_collection)
+        except VideoLoaderError as e:
+            self.loading_error.emit(str(e))
+        except Exception as e:
+            self.loading_error.emit(f"Unexpected error: {str(e)}")
 
 
 class MP4AnalyzerMainWindow(QMainWindow):
@@ -29,6 +110,9 @@ class MP4AnalyzerMainWindow(QMainWindow):
         self._zoom_factor = 1.0
         self._video_loader = VideoLoader()
         self._last_display_log_index: Optional[int] = None
+        self._frame_loader_thread: Optional[FrameLoaderThread] = None
+        self._video_load_worker: Optional[VideoLoadWorker] = None
+        self._progress_dialog: Optional[QProgressDialog] = None
 
         # UI components
         self._playback_control: Optional[PlaybackControlWidget] = None
@@ -92,65 +176,108 @@ class MP4AnalyzerMainWindow(QMainWindow):
             self._load_video_file(file_path)
 
     def _load_video_file(self, file_path: str):
-        """Load and parse a video file: metadata, frames, MP4 boxes."""
-        try:
-            self._log_message(f"Loading video file: {file_path}")
+        """Load a video file asynchronously to prevent UI freezing."""
+        # Stop existing workers
+        if self._frame_loader_thread:
+            self._frame_loader_thread.stop()
+            self._frame_loader_thread = None
+        if self._video_load_worker:
+            self._video_load_worker.quit()
+            self._video_load_worker.wait()
 
-            # Run FFmpeg-based loader
-            metadata, frame_collection = self._video_loader.load_video_file(
-                file_path, log_callback=self._log_message
-            )
+        # Show progress dialog
+        self._progress_dialog = QProgressDialog("Loading video file...", "Cancel", 0, 0, self)
+        self._progress_dialog.setWindowModality(Qt.WindowModality.WindowModal)
+        self._progress_dialog.setMinimumDuration(500)  # Show after 500ms
+        self._progress_dialog.show()
 
-            if not metadata:
-                self._log_message(f"❌ Failed to load metadata: {file_path}")
-                QMessageBox.critical(
-                    self,
-                    "Failed to load video",
-                    "Could not extract metadata from the selected file.",
-                )
-                return
+        # Start async video loading
+        self._video_load_worker = VideoLoadWorker(file_path, self._video_loader)
+        self._video_load_worker.video_loaded.connect(self._on_video_loaded)
+        self._video_load_worker.loading_progress.connect(self._on_loading_progress)
+        self._video_load_worker.loading_error.connect(self._on_loading_error)
+        self._video_load_worker.start()
 
-            # Save state
-            self._video_metadata = metadata
-            self._frame_collection = frame_collection
+    def _on_video_loaded(self, metadata, frame_collection):
+        """Handle video loaded from background thread."""
+        self._video_metadata = metadata
+        self._frame_collection = frame_collection
+        
+        if self._progress_dialog:
+            self._progress_dialog.close()
+            self._progress_dialog = None
+
+        if self._video_metadata and not self._frame_collection.is_empty:
             self._current_frame_index = 0
-            self._last_display_log_index = None
-
-            # --- Parse MP4 boxes and metadata text ---
-            try:
-                boxes = parse_mp4_boxes(file_path)
-            except Exception as ex:
-                self._log_message(f"Failed to parse boxes: {ex}")
-                boxes = []
-
-            try:
-                metadata_text = generate_movie_info(file_path, boxes)
-            except Exception as ex:
-                metadata_text = f"Failed to extract metadata: {ex}"
-
-            # Update UI panels with metadata and boxes
-            self._left_panel.update_metadata(metadata_text)
-            self._left_panel.update_boxes(boxes)
-            self._playback_control.set_frame_range(frame_collection.count)
-            self._right_panel.timeline_widget.set_frame_data(
-                frame_collection.frame_metadata_list
-            )
+            
+            # Start frame loader thread
+            self._frame_loader_thread = FrameLoaderThread(self._frame_collection)
+            self._frame_loader_thread.frame_loaded.connect(self._on_frame_loaded)
+            self._frame_loader_thread.start()
+            
+            self._update_ui_for_loaded_video()
             self._display_current_frame()
-
-            self._log_message(
-                f"✅ Loaded: {file_path} ({frame_collection.count} frames)"
+        else:
+            QMessageBox.warning(
+                self, "Load Error", "Failed to load video metadata or frames."
             )
 
-        except VideoLoaderError as e:
-            # FFmpeg missing / failure
-            self._log_message(f"❌ {str(e)}")
-            QMessageBox.critical(self, "Video Loading Error", str(e))
-        except Exception as e:
-            # Unexpected errors
-            self._log_message(f"❌ Unexpected error: {str(e)}")
-            QMessageBox.critical(
-                self, "Unexpected Error", f"An unexpected error occurred: {str(e)}"
-            )
+    def _on_loading_progress(self, message: str):
+        """Update progress dialog with loading status."""
+        if self._progress_dialog:
+            self._progress_dialog.setLabelText(message)
+
+    def _on_loading_error(self, error_message: str):
+        """Handle video loading error."""
+        if self._progress_dialog:
+            self._progress_dialog.close()
+            self._progress_dialog = None
+        QMessageBox.critical(self, "Video Load Error", error_message)
+
+    def _on_frame_loaded(self, index: int, frame):
+        """Handle frame loaded from background thread."""
+        # Only update display if this is the current frame
+        if index == self._current_frame_index:
+            pixmap = QPixmap.fromImage(frame)
+            if self._zoom_factor != 1.0:
+                new_width = int(pixmap.width() * self._zoom_factor)
+                new_height = int(pixmap.height() * self._zoom_factor)
+                pixmap = pixmap.scaled(
+                    new_width,
+                    new_height,
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation,
+                )
+            self._right_panel.video_canvas.display_frame(pixmap)
+
+    def _update_ui_for_loaded_video(self):
+        """Update UI components after video is loaded."""
+        if not self._video_metadata or self._frame_collection.is_empty:
+            return
+
+        # Parse MP4 boxes and metadata text
+        try:
+            boxes = parse_mp4_boxes(self._frame_collection._file_path)
+        except Exception as ex:
+            self._log_message(f"Failed to parse boxes: {ex}")
+            boxes = []
+
+        try:
+            metadata_text = generate_movie_info(self._frame_collection._file_path, boxes)
+        except Exception as ex:
+            metadata_text = f"Failed to extract metadata: {ex}"
+
+        # Update UI panels with metadata and boxes
+        self._left_panel.update_metadata(metadata_text)
+        self._left_panel.update_boxes(boxes)
+        self._playback_control.set_frame_range(self._frame_collection.count)
+        self._right_panel.timeline_widget.set_frame_data(
+            self._frame_collection.frame_metadata_list
+        )
+
+        self._log_message(
+            f"✅ Loaded: {self._frame_collection._file_path} ({self._frame_collection.count} frames)"
+        )
 
     def _handle_save_snapshot(self):
         """Prompt user to save current video frame as PNG snapshot."""
@@ -204,13 +331,48 @@ class MP4AnalyzerMainWindow(QMainWindow):
 
         # Clamp frame index
         valid_index = self._frame_collection.get_valid_index(frame_index)
+        self._current_frame_index = valid_index
+        
+        # Update UI immediately for responsiveness
+        self._playback_control.set_current_frame(
+            valid_index, self._frame_collection.count
+        )
+        self._right_panel.timeline_widget.set_selected_frame(valid_index)
+        
+        # Try to get frame from cache first (fast path)
+        with self._frame_collection._lock:
+            cached_frame = self._frame_collection._cache.get(valid_index)
+        
+        if cached_frame:
+            # Frame in uncompressed cache - display immediately
+            self._display_frame_image(cached_frame)
+        else:
+            # Try compressed cache (medium speed)
+            compressed_frame = self._frame_collection._load_from_compressed_cache(valid_index)
+            if compressed_frame:
+                self._display_frame_image(compressed_frame)
+            else:
+                # Frame not cached - request async loading and show placeholder
+                if self._frame_loader_thread:
+                    self._frame_loader_thread.request_frame(valid_index)
+                # Keep previous frame displayed until new one loads
+
+        # Log and preload in background
         frame_meta = self._frame_collection.get_frame_metadata(valid_index)
-        frame = self._frame_collection.get_frame(valid_index)
+        if self._last_display_log_index != valid_index:
+            if frame_meta:
+                self._log_message(
+                    f"➡️ Frame {valid_index} ({frame_meta.frame_type}, {frame_meta.size_bytes}B)"
+                )
+            else:
+                self._log_message(f"➡️ Frame {valid_index}")
+            self._last_display_log_index = valid_index
+        
+        # Preload nearby frames for smoother navigation
+        self._preload_nearby_frames(valid_index)
 
-        if not frame:
-            return
-
-        # --- Convert to QPixmap + apply zoom ---
+    def _display_frame_image(self, frame: object):
+        """Display a QImage frame with zoom applied."""
         pixmap = QPixmap.fromImage(frame)
         if self._zoom_factor != 1.0:
             new_width = int(pixmap.width() * self._zoom_factor)
@@ -223,23 +385,6 @@ class MP4AnalyzerMainWindow(QMainWindow):
             )
 
         self._right_panel.video_canvas.display_frame(pixmap)
-        self._current_frame_index = valid_index
-
-        # Log once per displayed frame
-        if self._last_display_log_index != valid_index:
-            if frame_meta:
-                self._log_message(
-                    f"➡️ Frame {valid_index} ({frame_meta.frame_type}, {frame_meta.size_bytes}B)"
-                )
-            else:
-                self._log_message(f"➡️ Frame {valid_index}")
-            self._last_display_log_index = valid_index
-
-        # Update UI widgets
-        self._playback_control.set_current_frame(
-            valid_index, self._frame_collection.count
-        )
-        self._right_panel.timeline_widget.set_selected_frame(valid_index)
         self._right_panel.control_bar.set_resolution_text(
             f"{frame.width()}x{frame.height()}"
         )
@@ -257,10 +402,45 @@ class MP4AnalyzerMainWindow(QMainWindow):
         """Reset zoom back to 100%."""
         self._right_panel.control_bar.reset_zoom_value()
 
+    def _preload_nearby_frames(self, current_index: int):
+        """Preload frames around current index with intelligent patterns."""
+        if not self._frame_loader_thread or self._frame_collection.is_empty:
+            return
+        
+        # Track navigation direction for smarter preloading
+        if hasattr(self, '_last_frame_index'):
+            direction = 1 if current_index > self._last_frame_index else -1
+        else:
+            direction = 1
+        self._last_frame_index = current_index
+        
+        # Preload more frames in the direction of navigation
+        if direction > 0:  # Moving forward
+            preload_behind, preload_ahead = 2, 5
+        else:  # Moving backward
+            preload_behind, preload_ahead = 5, 2
+            
+        # Preload frames prioritizing navigation direction
+        for offset in range(-preload_behind, preload_ahead + 1):
+            target_index = current_index + offset
+            if 0 <= target_index < self._frame_collection.count and target_index != current_index:
+                self._frame_loader_thread.request_frame(target_index)
+
     def _log_message(self, message: str):
         """Forward log messages to left panel."""
         if self._left_panel:
             self._left_panel.add_log_message(message)
+
+    def closeEvent(self, event):
+        """Clean up resources when window is closed."""
+        if self._frame_loader_thread:
+            self._frame_loader_thread.stop()
+        if self._video_load_worker:
+            self._video_load_worker.quit()
+            self._video_load_worker.wait()
+        if self._progress_dialog:
+            self._progress_dialog.close()
+        super().closeEvent(event)
 
     def eventFilter(self, source, event):
         """Handle mouse wheel zooming on video canvas."""

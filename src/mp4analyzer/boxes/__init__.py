@@ -8,11 +8,13 @@ from .mdhd import MediaHeaderBox
 from .iods import ObjectDescriptorBox
 from .moov import MovieBox
 from .moof import MovieFragmentBox
+from .mfra import MovieFragmentRandomAccessBox
 from .mfhd import MovieFragmentHeaderBox
 from .traf import TrackFragmentBox
 from .tfhd import TrackFragmentHeaderBox
 from .tfdt import TrackFragmentBaseMediaDecodeTimeBox
 from .trun import TrackRunBox
+from .tfra import TrackFragmentRandomAccessBox
 from .mvex import MovieExtendsBox
 from .mehd import MovieExtendsHeaderBox
 from .trex import TrackExtendsBox
@@ -62,6 +64,7 @@ from .sbgp import SampleToGroupBox
 from .chpl import ChapterListBox
 from .text import TextSampleEntry
 from .gmhd import GenericMediaHeaderBox, GenericMediaInfoBox, TextMediaHeaderBox
+from .mfro import MovieFragmentRandomAccessOffsetBox
 
 
 __all__ = [
@@ -73,11 +76,13 @@ __all__ = [
     "ObjectDescriptorBox",
     "MovieBox",
     "MovieFragmentBox",
+    "MovieFragmentRandomAccessBox",
     "MovieFragmentHeaderBox",
     "TrackFragmentBox",
     "TrackFragmentHeaderBox",
     "TrackFragmentBaseMediaDecodeTimeBox",
     "TrackRunBox",
+    "TrackFragmentRandomAccessBox",
     "MovieExtendsBox",
     "MovieExtendsHeaderBox",
     "TrackExtendsBox",
@@ -130,4 +135,5 @@ __all__ = [
     "GenericMediaHeaderBox",
     "GenericMediaInfoBox",
     "TextMediaHeaderBox",
+    "MovieFragmentRandomAccessOffsetBox",
 ]

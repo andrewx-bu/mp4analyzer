@@ -18,11 +18,13 @@ from src.mp4analyzer.boxes import (
     ObjectDescriptorBox,
     MovieBox,
     MovieFragmentBox,
+    MovieFragmentRandomAccessBox,
     MovieFragmentHeaderBox,
     TrackFragmentBox,
     TrackFragmentHeaderBox,
     TrackFragmentBaseMediaDecodeTimeBox,
     TrackRunBox,
+    TrackFragmentRandomAccessBox,
     MovieExtendsBox,
     MovieExtendsHeaderBox,
     TrackExtendsBox,
@@ -71,6 +73,7 @@ from src.mp4analyzer.boxes import (
     GenericMediaHeaderBox,
     GenericMediaInfoBox,
     TextMediaHeaderBox,
+    MovieFragmentRandomAccessOffsetBox,
 )
 
 # ------------------------------------------------------------------------------
@@ -317,6 +320,61 @@ def test_box_properties(tmp_path):
         "sample_count": 25,
         "data_offset": 208,
         "first_sample_flags": 33554432,
+    }
+
+    tfra_payload = (
+        b"\x00\x00\x00\x00"
+        + struct.pack(">I", 1)
+        + struct.pack(">I", 0)
+        + struct.pack(">I", 1)
+        + struct.pack(">I", 1000)
+        + struct.pack(">I", 2000)
+        + b"\x01\x01\x01"
+    )
+    tfra_size = 8 + len(tfra_payload)
+    tfra = TrackFragmentRandomAccessBox.from_parsed(
+        "tfra", tfra_size, 8218103, tfra_payload, []
+    )
+    assert tfra.properties() == {
+        "size": tfra_size,
+        "flags": 0,
+        "version": 0,
+        "box_name": "TrackFragmentRandomAccessBox",
+        "start": 8218103,
+        "data": "00000001 00000000 00000001 000003e8 000007d0 010101",
+        "track_ID": 1,
+        "length_size_of_traf_num": 0,
+        "length_size_of_trun_num": 0,
+        "length_size_of_sample_num": 0,
+        "time": 1000,
+        "moof_offset": 2000,
+        "traf_number": 1,
+        "trun_number": 1,
+        "sample_number": 1,
+    }
+
+    mfra_size = 8 + tfra_size + 16
+    mfro_payload = b"\x00\x00\x00\x00" + struct.pack(">I", mfra_size)
+    mfro = MovieFragmentRandomAccessOffsetBox.from_parsed(
+        "mfro", 16, 8218855, mfro_payload, []
+    )
+    assert mfro.properties() == {
+        "size": 16,
+        "flags": 0,
+        "version": 0,
+        "box_name": "MovieFragmentRandomAccessOffsetBox",
+        "start": 8218855,
+        "data": "0000003b",
+        "mfra_size": mfra_size,
+    }
+
+    mfra = MovieFragmentRandomAccessBox.from_parsed(
+        "mfra", mfra_size, 8218095, b"", [tfra, mfro]
+    )
+    assert mfra.properties() == {
+        "size": mfra_size,
+        "box_name": "MovieFragmentRandomAccessBox",
+        "start": 8218095,
     }
 
     dinf = DataInformationBox.from_parsed("dinf", 36, 448, b"", [])

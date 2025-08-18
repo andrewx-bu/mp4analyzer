@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import List, Dict
-import struct
 
 from .base import MP4Box
 from .tfhd import TrackFragmentHeaderBox

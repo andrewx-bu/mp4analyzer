@@ -67,10 +67,13 @@ Download and run the executable from GitHub [Releases](https://github.com/andrew
 ## Supported Box Types
 
 ### ISO Base Media (MP4)
-`ftyp`, `moov`, `mvhd`, `trak`, `tkhd`, `mdia`, `mdhd`, `iods`, `edts`, `elst`, `hdlr`, `minf`, `vmhd`, `smhd`, `dinf`, `dref`, `url `, `stbl`, `stsd`, `avc1`, `avcC`, `colr`, `pasp`, `btrt`, `hev1`, `hvcC`, `av01`, `av1C`, `mp4a`, `esds`, `mdat`, `free`, `stts`, `ctts`, `stss`, `sdtp`, `stsc`, `stsz`, `stco`, `sgpd`, `sbgp`, `meta`, `tref`, `udta`
+`ac4`, `av01`, `av1C`, `avc1`, `avcC`, `btrt`, `colr`, `ctts`, `dac4`, `dinf`, `dref`, `edts`, `elst`, `esds`, `free`, `ftyp`, `hdlr`,
+`hev1`, `hvcC`, `iods`, `mdat`, `mdhd`, `mdia`, `mehd`, `meta`, `mfhd`, `mfra`, `mfro`, `minf`, `moof`, `moov`, `mp4a`, `mvex`, `mvhd`,
+`pasp`, `sbgp`, `sdtp`, `sgpd`, `smhd`, `stbl`, `stco`, `stsc`, `stsd`, `stss`, `stsz`, `stts`, `tfdt`, `tfhd`, `tfra`, `tkhd`, `traf`,
+`trak`, `tref`, `trex`, `trun`, `udta`, `url `, `vmhd`
 
 ### QuickTime Extensions
-`chpl`, `gmhd`, `gmin`, `text` (gmhd), `ilst`, `data`, `text` (sample entry)
+`chpl`, `gmhd`, `gmin`, `text` (gmhd), `ilst`, `data`, `text` (sample entry), `fiel`
 
 ### TODO
 Add more boxes (e.g., VP9 codec, fragmented MP4, etc.)

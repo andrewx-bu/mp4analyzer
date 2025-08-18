@@ -11,6 +11,8 @@ from .moof import MovieFragmentBox
 from .mfhd import MovieFragmentHeaderBox
 from .traf import TrackFragmentBox
 from .tfhd import TrackFragmentHeaderBox
+from .tfdt import TrackFragmentBaseMediaDecodeTimeBox
+from .trun import TrackRunBox
 from .mvex import MovieExtendsBox
 from .mehd import MovieExtendsHeaderBox
 from .trex import TrackExtendsBox
@@ -74,6 +76,8 @@ __all__ = [
     "MovieFragmentHeaderBox",
     "TrackFragmentBox",
     "TrackFragmentHeaderBox",
+    "TrackFragmentBaseMediaDecodeTimeBox",
+    "TrackRunBox",
     "MovieExtendsBox",
     "MovieExtendsHeaderBox",
     "TrackExtendsBox",

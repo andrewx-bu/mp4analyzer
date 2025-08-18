@@ -6,6 +6,7 @@ import struct
 
 from .base import MP4Box
 from .tfhd import TrackFragmentHeaderBox
+from .trun import TrackRunBox
 
 _TRACK_SAMPLE_COUNTER: Dict[int, int] = {}
 
@@ -32,8 +33,8 @@ class TrackFragmentBox(MP4Box):
         for child in children:
             if isinstance(child, TrackFragmentHeaderBox):
                 track_id = child.track_id
-            elif child.type == "trun" and child.data and len(child.data) >= 8:
-                sample_number += struct.unpack(">I", child.data[4:8])[0]
+            elif isinstance(child, TrackRunBox):
+                sample_number += child.sample_count
         counter = _TRACK_SAMPLE_COUNTER.get(track_id, 0)
         first_sample_index = counter + 1 if track_id else 0
         _TRACK_SAMPLE_COUNTER[track_id] = counter + sample_number

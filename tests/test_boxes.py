@@ -21,6 +21,8 @@ from src.mp4analyzer.boxes import (
     MovieFragmentHeaderBox,
     TrackFragmentBox,
     TrackFragmentHeaderBox,
+    TrackFragmentBaseMediaDecodeTimeBox,
+    TrackRunBox,
     MovieExtendsBox,
     MovieExtendsHeaderBox,
     TrackExtendsBox,
@@ -224,6 +226,97 @@ def test_box_properties(tmp_path):
         "box_name": "MovieFragmentHeaderBox",
         "start": 1156,
         "sequence_number": 1,
+    }
+
+    tfdt_payload = b"\x01\x00\x00\x00" + struct.pack(">Q", 1440000)
+    tfdt = TrackFragmentBaseMediaDecodeTimeBox.from_parsed(
+        "tfdt", 20, 7951412, tfdt_payload, []
+    )
+    assert tfdt.properties() == {
+        "size": 20,
+        "flags": 0,
+        "version": 1,
+        "box_name": "TrackFragmentBaseMediaDecodeTimeBox",
+        "start": 7951412,
+        "baseMediaDecodeTime": 1440000,
+    }
+
+    trun_payload = (
+        b"\x01\x00\x02\x05"
+        + struct.pack(">I", 25)
+        + struct.pack(">i", 208)
+        + struct.pack(">I", 33554432)
+        + b"".join(
+            struct.pack(">I", s)
+            for s in [
+                405,
+                294,
+                296,
+                300,
+                294,
+                310,
+                322,
+                317,
+                323,
+                315,
+                353,
+                318,
+                328,
+                353,
+                310,
+                315,
+                294,
+                309,
+                296,
+                358,
+                351,
+                302,
+                399,
+                327,
+                413,
+            ]
+        )
+    )
+    trun = TrackRunBox.from_parsed("trun", 124, 7692900, trun_payload, [])
+    assert trun.properties() == {
+        "size": 124,
+        "flags": 517,
+        "version": 1,
+        "box_name": "TrackRunBox",
+        "sample_duration": [],
+        "sample_size": [
+            405,
+            294,
+            296,
+            300,
+            294,
+            310,
+            322,
+            317,
+            323,
+            315,
+            353,
+            318,
+            328,
+            353,
+            310,
+            315,
+            294,
+            309,
+            296,
+            358,
+            351,
+            302,
+            399,
+            327,
+            413,
+        ],
+        "sample_flags": [],
+        "sample_composition_time_offset": [],
+        "start": 7692900,
+        "sample_count": 25,
+        "data_offset": 208,
+        "first_sample_flags": 33554432,
     }
 
     dinf = DataInformationBox.from_parsed("dinf", 36, 448, b"", [])

@@ -968,9 +968,11 @@ def test_avc_sample_entry_properties():
         + struct.pack(">H", 0)  # depth
         + b"\xff\xff"  # pre_defined
     )
+    btrt_payload = struct.pack(">III", 0, 0x000F6F5D, 0x000F6F5D)
+    btrt_box = mk_box(b"btrt", btrt_payload)
     fiel_payload = b"\x01\x00"
     fiel_box = mk_box(b"fiel", fiel_payload)
-    avc1_payload = header + avcc_box + fiel_box
+    avc1_payload = header + avcc_box + btrt_box + fiel_box
     avc1_size = 8 + len(avc1_payload)
     avc1 = AVCSampleEntry.from_parsed("avc1", avc1_size, 508, avc1_payload, [])
     assert avc1.properties() == {
@@ -986,9 +988,10 @@ def test_avc_sample_entry_properties():
         "compressorname": "AVC Coding",
         "depth": 0,
     }
-    assert len(avc1.children) == 2
+    assert len(avc1.children) == 3
     assert isinstance(avc1.children[0], AVCConfigurationBox)
-    assert isinstance(avc1.children[1], FieldHandlingBox)
+    assert isinstance(avc1.children[1], BitRateBox)
+    assert isinstance(avc1.children[2], FieldHandlingBox)
 
     comp_field = b"\x00" * 32
     header = (

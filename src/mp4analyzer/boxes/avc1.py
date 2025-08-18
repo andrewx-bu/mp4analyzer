@@ -10,6 +10,7 @@ from .avcc import AVCConfigurationBox
 from .colr import ColourInformationBox
 from .pasp import PixelAspectRatioBox
 from .fiel import FieldHandlingBox
+from .btrt import BitRateBox
 
 
 @dataclass
@@ -68,6 +69,10 @@ class AVCSampleEntry(MP4Box):
             payload = stream.read(child_size - 8)
             if child_type_str == "avcC":
                 child = AVCConfigurationBox.from_parsed(
+                    child_type_str, child_size, child_offset_base + pos, payload, []
+                )
+            elif child_type_str == "btrt":
+                child = BitRateBox.from_parsed(
                     child_type_str, child_size, child_offset_base + pos, payload, []
                 )
             elif child_type_str == "colr":

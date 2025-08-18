@@ -10,3 +10,4 @@ dist/
 *.spec
 .env
 _version.py
+*.json

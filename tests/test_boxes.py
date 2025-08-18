@@ -19,6 +19,8 @@ from src.mp4analyzer.boxes import (
     MovieBox,
     MovieFragmentBox,
     MovieFragmentHeaderBox,
+    TrackFragmentBox,
+    TrackFragmentHeaderBox,
     MovieExtendsBox,
     MovieExtendsHeaderBox,
     TrackExtendsBox,

@@ -11,6 +11,8 @@ from .boxes import (
     MovieBox,
     MovieFragmentBox,
     MovieFragmentHeaderBox,
+    TrackFragmentBox,
+    TrackFragmentHeaderBox,
     MovieExtendsBox,
     MovieExtendsHeaderBox,
     TrackExtendsBox,
@@ -96,6 +98,8 @@ BOX_PARSERS: Dict[str, Type[MP4Box]] = {
     "moov": MovieBox,
     "moof": MovieFragmentBox,
     "mfhd": MovieFragmentHeaderBox,
+    "traf": TrackFragmentBox,
+    "tfhd": TrackFragmentHeaderBox,
     "mvex": MovieExtendsBox,
     "mehd": MovieExtendsHeaderBox,
     "trex": TrackExtendsBox,
@@ -147,7 +151,7 @@ BOX_PARSERS: Dict[str, Type[MP4Box]] = {
 }
 
 # Keep raw payloads for later
-RAW_DATA_BOX_TYPES = {"stsd", "stts", "sbgp", "sgpd"}
+RAW_DATA_BOX_TYPES = {"stsd", "stts", "sbgp", "sgpd", "trun"}
 
 
 def _read_u64(f: BinaryIO) -> int:
@@ -254,6 +258,8 @@ def parse_mp4_boxes(file_path: str) -> List[MP4Box]:
     """Parse all top-level boxes from an MP4 file."""
     size = os.path.getsize(file_path)
     boxes: List[MP4Box] = []
+    # Reset track-fragment sample counters for each new parse
+    TrackFragmentBox.reset_counters()
     with open(file_path, "rb") as f:
         while f.tell() < size:
             box = _parse_box(f, size)

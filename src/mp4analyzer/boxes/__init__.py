@@ -9,6 +9,8 @@ from .iods import ObjectDescriptorBox
 from .moov import MovieBox
 from .moof import MovieFragmentBox
 from .mfhd import MovieFragmentHeaderBox
+from .traf import TrackFragmentBox
+from .tfhd import TrackFragmentHeaderBox
 from .mvex import MovieExtendsBox
 from .mehd import MovieExtendsHeaderBox
 from .trex import TrackExtendsBox
@@ -70,6 +72,8 @@ __all__ = [
     "MovieBox",
     "MovieFragmentBox",
     "MovieFragmentHeaderBox",
+    "TrackFragmentBox",
+    "TrackFragmentHeaderBox",
     "MovieExtendsBox",
     "MovieExtendsHeaderBox",
     "TrackExtendsBox",

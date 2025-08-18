@@ -17,6 +17,8 @@ from src.mp4analyzer.boxes import (
     TrackHeaderBox,
     ObjectDescriptorBox,
     MovieBox,
+    MovieFragmentBox,
+    MovieFragmentHeaderBox,
     MovieExtendsBox,
     MovieExtendsHeaderBox,
     TrackExtendsBox,
@@ -202,6 +204,24 @@ def test_box_properties(tmp_path):
         "box_name": "SoundMediaHeaderBox",
         "start": 12950,
         "balance": 0,
+    }
+
+    moof = MovieFragmentBox.from_parsed("moof", 304, 1148, b"", [])
+    assert moof.properties() == {
+        "size": 304,
+        "box_name": "MovieFragmentBox",
+        "start": 1148,
+    }
+
+    mfhd_payload = b"\x00\x00\x00\x00" + struct.pack(">I", 1)
+    mfhd = MovieFragmentHeaderBox.from_parsed("mfhd", 16, 1156, mfhd_payload, [])
+    assert mfhd.properties() == {
+        "size": 16,
+        "flags": 0,
+        "version": 0,
+        "box_name": "MovieFragmentHeaderBox",
+        "start": 1156,
+        "sequence_number": 1,
     }
 
     dinf = DataInformationBox.from_parsed("dinf", 36, 448, b"", [])
@@ -1137,6 +1157,37 @@ def test_movie_extends_box(tmp_path):
     assert mvex.properties() == {
         "size": len(mvex_box),
         "box_name": "MovieExtendsBox",
+        "start": 0,
+    }
+
+
+def test_movie_fragment_box(tmp_path):
+    mfhd_payload = b"\x00\x00\x00\x00" + struct.pack(">I", 1)
+    mfhd_box = mk_box(b"mfhd", mfhd_payload)
+    moof_box = mk_box(b"moof", mfhd_box)
+
+    mp4_path = tmp_path / "moof.mp4"
+    mp4_path.write_bytes(moof_box)
+
+    boxes = parse_mp4_boxes(str(mp4_path))
+    assert len(boxes) == 1
+
+    moof = boxes[0]
+    assert isinstance(moof, MovieFragmentBox)
+    assert len(moof.children) == 1
+    mfhd = moof.children[0]
+    assert isinstance(mfhd, MovieFragmentHeaderBox)
+    assert mfhd.properties() == {
+        "size": len(mfhd_box),
+        "flags": 0,
+        "version": 0,
+        "box_name": "MovieFragmentHeaderBox",
+        "start": 8,
+        "sequence_number": 1,
+    }
+    assert moof.properties() == {
+        "size": len(moof_box),
+        "box_name": "MovieFragmentBox",
         "start": 0,
     }
 

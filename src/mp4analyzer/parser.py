@@ -269,15 +269,67 @@ def _parse_box(
     return MP4Box(btype, size, start, children, data)
 
 
+def parse_mp4_boxes_streaming(file_path: str, max_memory_mb: int = 50) -> List[MP4Box]:
+    """Parse MP4 boxes with memory-conscious streaming for large files."""
+    file_size = os.path.getsize(file_path)
+    boxes: List[MP4Box] = []
+    max_memory_bytes = max_memory_mb * 1024 * 1024
+
+    TrackFragmentBox.reset_counters()
+
+    with open(file_path, "rb") as f:
+        while f.tell() < file_size:
+            current_pos = f.tell()
+
+            # Peek at box header to check if it's a large mdat
+            header = f.read(8)
+            if len(header) < 8:
+                break
+
+            size, btype_bytes = struct.unpack(">I4s", header)
+
+            # Handle box type decoding more robustly
+            try:
+                btype = btype_bytes.decode("ascii")
+            except UnicodeDecodeError:
+                # Handle non-ASCII box types by using hex representation
+                btype = btype_bytes.hex()
+                print(f"Warning: Non-ASCII box type encountered: {btype}")
+            except Exception:
+                # Fallback for any other decoding issues
+                btype = "unknown"
+
+            # Skip large mdat boxes entirely, just record metadata
+            if btype == "mdat" and size > max_memory_bytes:
+                box = MediaDataBox(btype, size, current_pos)
+                f.seek(size - 8, os.SEEK_CUR)  # Skip payload (we already read 8 bytes)
+                boxes.append(box)
+                continue
+
+            # Reset position and parse normally for smaller boxes
+            f.seek(current_pos)
+            box = _parse_box(f, file_size)
+            if not box:
+                break
+            boxes.append(box)
+
+    return boxes
+
+
 def parse_mp4_boxes(file_path: str) -> List[MP4Box]:
     """Parse all top-level boxes from an MP4 file."""
-    size = os.path.getsize(file_path)
+    file_size = os.path.getsize(file_path)
+
+    # Use streaming parser for large files
+    if file_size > 100 * 1024 * 1024:  # > 100MB
+        return parse_mp4_boxes_streaming(file_path)
+
+    # Original implementation for smaller files
     boxes: List[MP4Box] = []
-    # Reset track-fragment sample counters for each new parse
     TrackFragmentBox.reset_counters()
     with open(file_path, "rb") as f:
-        while f.tell() < size:
-            box = _parse_box(f, size)
+        while f.tell() < file_size:
+            box = _parse_box(f, file_size)
             if not box:
                 break
             boxes.append(box)

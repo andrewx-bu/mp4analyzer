@@ -182,17 +182,22 @@ class LazyVideoFrameCollection:
             data = bytes(buffer.data())
             self._compressed_cache[index] = data
             self._compressed_cache.move_to_end(index)
-            self._log(f"cache: insert jpeg idx={index} sizes raw={len(self._cache)} jpeg={len(self._compressed_cache)}")
+            self._log(
+                f"cache: insert jpeg idx={index} sizes raw={len(self._cache)} jpeg={len(self._compressed_cache)}"
+            )
             # Enforce a single combined budget across raw+compressed caches
             while (len(self._compressed_cache) + len(self._cache)) > self._cache_size:
                 # Prefer evicting raw frames first
                 if self._cache:
                     ev_idx, _ = self._cache.popitem(last=False)
-                    self._log(f"cache: evict raw idx={ev_idx} sizes raw={len(self._cache)} jpeg={len(self._compressed_cache)}")
+                    self._log(
+                        f"cache: evict raw idx={ev_idx} sizes raw={len(self._cache)} jpeg={len(self._compressed_cache)}"
+                    )
                 else:
                     ev_idx, _ = self._compressed_cache.popitem(last=False)
-                    self._log(f"cache: evict jpeg idx={ev_idx} sizes raw={len(self._cache)} jpeg={len(self._compressed_cache)}")
-
+                    self._log(
+                        f"cache: evict jpeg idx={ev_idx} sizes raw={len(self._cache)} jpeg={len(self._compressed_cache)}"
+                    )
 
     def _load_from_compressed_cache(self, index: int) -> Optional[QImage]:
         """Load frame from compressed cache."""
@@ -283,7 +288,9 @@ class LazyVideoFrameCollection:
                         height,
                         QImage.Format.Format_RGB888,
                     )
-                    self._log(f"decode: single ok idx={target_index} ts={timestamp:.3f}s")
+                    self._log(
+                        f"decode: single ok idx={target_index} ts={timestamp:.3f}s"
+                    )
                     return qimage.copy()  # Ensure data ownership
 
         except Exception as e:
@@ -340,7 +347,9 @@ class LazyVideoFrameCollection:
             half_range = max_decode_frames // 2
             decode_start = max(gop_start, target_index - half_range)
             decode_end = min(gop_end, target_index + half_range)
-            self._log(f"decode: range clip gop={gop_size} [{decode_start}-{decode_end}]")
+            self._log(
+                f"decode: range clip gop={gop_size} [{decode_start}-{decode_end}]"
+            )
         else:
             decode_start, decode_end = gop_start, gop_end
             self._log(f"decode: range gop={gop_size} [{decode_start}-{decode_end}]")
@@ -441,7 +450,9 @@ class LazyVideoFrameCollection:
                         self._log(f"Error loading frame {i}: {str(e)}")
 
             if cached_frames:
-                self._log(f"cache: insert raw [{min(cached_frames)}-{max(cached_frames)}] count={len(cached_frames)} sizes raw={len(self._cache)} jpeg={len(self._compressed_cache)}")
+                self._log(
+                    f"cache: insert raw [{min(cached_frames)}-{max(cached_frames)}] count={len(cached_frames)} sizes raw={len(self._cache)} jpeg={len(self._compressed_cache)}"
+                )
 
         except Exception as e:
             self._log(f"Exception decoding range {start_index}-{end_index}: {str(e)}")
@@ -499,8 +510,12 @@ class LazyVideoFrameCollection:
                     self._cache[index] = qimage
                     while len(self._cache) > self._cache_size:
                         ev_idx, _ = self._cache.popitem(last=False)
-                        self._log(f"cache: evict raw idx={ev_idx} sizes raw={len(self._cache)} jpeg={len(self._compressed_cache)}")
-                    self._log(f"cache: insert raw idx={index} sizes raw={len(self._cache)} jpeg={len(self._compressed_cache)}")
+                        self._log(
+                            f"cache: evict raw idx={ev_idx} sizes raw={len(self._cache)} jpeg={len(self._compressed_cache)}"
+                        )
+                    self._log(
+                        f"cache: insert raw idx={index} sizes raw={len(self._cache)} jpeg={len(self._compressed_cache)}"
+                    )
 
                 os.remove(temp_frame_path)
                 return qimage

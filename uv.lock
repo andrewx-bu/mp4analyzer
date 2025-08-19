@@ -97,6 +97,7 @@ dev = [
 ]
 gui = [
     { name = "pillow" },
+    { name = "psutil" },
     { name = "pyqt6" },
 ]
 
@@ -106,6 +107,7 @@ requires-dist = [
     { name = "pillow", marker = "extra == 'dev'", specifier = ">=11.3" },
     { name = "pillow", marker = "extra == 'gui'", specifier = ">=11.3" },
     { name = "psutil", marker = "extra == 'dev'", specifier = ">=5.9" },
+    { name = "psutil", marker = "extra == 'gui'", specifier = ">=5.9" },
     { name = "pyinstaller", marker = "extra == 'dev'", specifier = ">=6.15" },
     { name = "pyqt6", marker = "extra == 'dev'", specifier = ">=6.9" },
     { name = "pyqt6", marker = "extra == 'gui'", specifier = ">=6.9" },

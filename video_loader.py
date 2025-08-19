@@ -83,11 +83,7 @@ def extract_metadata(file_path: str) -> Optional[VideoMetadata]:
 def parse_frames(
     file_path: str,
 ) -> Tuple[Optional[VideoMetadata], List[FrameData], List[float]]:
-    """
-    Parse per-frame metadata:
-      - pts (ticks), decode order (packet order), timestamp (sec).
-      - motion vector info to detect forward/backward references.
-    """
+    """Parse per-frame metadata with two optimized ffprobe calls."""
     metadata = extract_metadata(file_path)
     if not metadata:
         return None, [], []
@@ -95,50 +91,58 @@ def parse_frames(
     def _run(cmd):
         return _run_ffmpeg_cmd(cmd) or ""
 
-    # --- Stream time base (to convert ticks → seconds) ---
-    tb_cmd = [
+    # Call 1: Stream timebase + packets
+    meta_cmd = [
         "ffprobe",
         "-v",
         "error",
         "-select_streams",
         "v:0",
+        "-show_streams",
+        "-show_packets",
         "-show_entries",
         "stream=time_base",
-        "-of",
-        "json",
-        file_path,
-    ]
-    tb_json = {}
-    try:
-        tb_json = json.loads(_run(tb_cmd)) or {}
-    except Exception:
-        pass
-    tb_str = ((tb_json.get("streams") or [{}])[0]).get("time_base", "1/1")
-    try:
-        tb_num, tb_den = map(int, tb_str.split("/"))
-    except Exception:
-        tb_num, tb_den = 1, 1
-
-    # --- Packets (file pos → decode order index) ---
-    pkt_cmd = [
-        "ffprobe",
-        "-v",
-        "error",
-        "-select_streams",
-        "v:0",
         "-show_entries",
         "packet=pos,flags,size",
         "-of",
         "json",
         file_path,
     ]
-    pkt_json = {}
-    try:
-        pkt_json = json.loads(_run(pkt_cmd)) or {}
-    except Exception:
-        pass
-    packets = pkt_json.get("packets", []) or []
 
+    # Call 2: Frames with motion vectors
+    frame_cmd = [
+        "ffprobe",
+        "-v",
+        "error",
+        "-select_streams",
+        "v:0",
+        "-export_side_data",
+        "+mvs",
+        "-show_frames",
+        "-show_entries",
+        "frame=pkt_pos,pict_type,pkt_size,pkt_pts,pkt_dts,"
+        "best_effort_timestamp,side_data_list",
+        "-of",
+        "json",
+        file_path,
+    ]
+
+    try:
+        meta_result = json.loads(_run(meta_cmd)) or {}
+        frame_result = json.loads(_run(frame_cmd)) or {}
+    except Exception:
+        return metadata, [], []
+
+    # Extract timebase from meta call
+    streams = meta_result.get("streams", [])
+    tb_str = streams[0].get("time_base", "1/1") if streams else "1/1"
+    try:
+        tb_num, tb_den = map(int, tb_str.split("/"))
+    except Exception:
+        tb_num, tb_den = 1, 1
+
+    # Build packet position mapping
+    packets = meta_result.get("packets", []) or []
     pos_to_decode_idx = {}
     for i, p in enumerate(packets):
         pos = p.get("pos")
@@ -148,28 +152,8 @@ def parse_frames(
             except Exception:
                 continue
 
-    # --- Frame-level data (pts, type, size, mv side-data) ---
-    frm_cmd = [
-        "ffprobe",
-        "-v",
-        "error",
-        "-select_streams",
-        "v:0",
-        "-export_side_data",
-        "+mvs",
-        "-show_entries",
-        "frame=pkt_pos,pict_type,pkt_size,pkt_pts,pkt_dts,"
-        "best_effort_timestamp,side_data_list",
-        "-of",
-        "json",
-        file_path,
-    ]
-    frames_json = {}
-    try:
-        frames_json = json.loads(_run(frm_cmd)) or {}
-    except Exception:
-        pass
-    frames = frames_json.get("frames", []) or []
+    # Process frames
+    frames = frame_result.get("frames", []) or []
 
     def to_int(x, default=None):
         if x is None or x == "N/A":
@@ -184,16 +168,11 @@ def parse_frames(
     for f in frames:
         size_bytes = int(f.get("pkt_size", 0) or 0)
         frame_type = f.get("pict_type", "?") or "?"
-
-        # Prefer pkt_pts, else best_effort_timestamp
         pts_ticks = to_int(f.get("pkt_pts")) or to_int(
             f.get("best_effort_timestamp"), 0
         )
-
-        # Timestamp in seconds = pts * (num/den)
         timestamp_sec = (pts_ticks * tb_num / tb_den) if (pts_ticks and tb_den) else 0.0
 
-        # Decode order via packet file offset
         decode_order = None
         pkt_pos = f.get("pkt_pos")
         if pkt_pos not in (None, "N/A"):
@@ -202,9 +181,9 @@ def parse_frames(
             except Exception:
                 pass
         if decode_order is None:
-            decode_order = len(frame_data)  # fallback
+            decode_order = len(frame_data)
 
-        # Motion vectors: check if frame references past/future
+        # Motion vectors
         mv_past, mv_future = False, False
         for sd in f.get("side_data_list", []) or []:
             if sd.get("side_data_type") == "MOTION_VECTORS":
@@ -231,7 +210,7 @@ def parse_frames(
         uses_past.append(mv_past)
         uses_future.append(mv_future)
 
-    # --- Synthesize timestamps if missing ---
+    # Synthesize timestamps if missing
     if (
         not timestamps
         and metadata
@@ -253,16 +232,15 @@ def parse_frames(
             uses_past.append(False)
             uses_future.append(False)
 
-    # --- Normalize decode order + ref mapping ---
+    # Normalize decode order + ref mapping
     if frame_data:
-        # Sort frames by decode_order
         sorted_indices = sorted(
             range(len(frame_data)), key=lambda i: (frame_data[i].decode_order, i)
         )
         for new_order, orig_idx in enumerate(sorted_indices):
             frame_data[orig_idx].decode_order = new_order
 
-        # Map prev/next I/P frames for reference fallback
+        # Map prev/next I/P frames
         prev_ip, prev_map = None, [None] * len(frame_data)
         for i, fr in enumerate(frame_data):
             prev_map[i] = prev_ip

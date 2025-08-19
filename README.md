@@ -86,11 +86,14 @@ uv sync --extra dev
 # Run tests
 uv run pytest
 
+# Build CLI package
+uv build
+
 # Build GUI app
 uv run python build_exe.py
 
-# Build CLI package
-uv build
+# Create large .mp4 test file
+ffmpeg -f lavfi -i "testsrc2=duration=1800:size=1920x1080:rate=30" -c:v libx264 -fs 1000M test_1000mb.mp4
 ```
 
 ### Built With

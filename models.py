@@ -77,7 +77,6 @@ class LazyVideoFrameCollection:
         self._cache_size = cache_size
         self._cache_quality = 75  # JPEG quality for caching (faster compression)
         self._temp_dir = tempfile.mkdtemp()  # directory for decoded temp frames
-        self._last_cache_log_index = None
 
     def _calculate_optimal_cache_size(self) -> int:
         """Calculate optimal cache size based on available memory."""
@@ -87,21 +86,22 @@ class LazyVideoFrameCollection:
             # Get available memory in MB
             available_mb = psutil.virtual_memory().available // (1024 * 1024)
 
-            # Estimate frame size (assume worst case 4K)
-            estimated_frame_mb = 4 * 1920 * 1080 // (1024 * 1024)  # ~8MB per frame
+            # Find frame size (fallback to 1080p)
+            width = getattr(self, "_width", 1920) or 1920
+            height = getattr(self, "_height", 1080) or 1080
+            estimated_frame_mb = max(1, (4 * width * height) // (1024 * 1024))
 
-            # Use max 25% of available memory for cache
-            max_cache_mb = available_mb * 0.25
-            optimal_cache_size = max(
-                10, min(60, int(max_cache_mb // estimated_frame_mb))
-            )
+            # Use at most ~25% of available RAM with guardrails
+            max_cache_mb = max(64, int(available_mb * 0.25))
+            optimal_cache_size = int(max_cache_mb // estimated_frame_mb)
+            optimal_cache_size = max(10, min(120, optimal_cache_size))
 
             self._log(
                 f"Dynamic cache sizing: {optimal_cache_size} frames ({max_cache_mb:.1f}MB limit)"
             )
             return optimal_cache_size
 
-        except ImportError:
+        except Exception:
             # Fallback if psutil not available
             return 30
 
@@ -141,7 +141,7 @@ class LazyVideoFrameCollection:
                 img = self._cache.pop(index)
                 self._cache[index] = img
                 if self._last_cache_log_index != index:
-                    self._log(f"Frame {index} retrieved from cache")
+                    self._log(f"cache: hit raw idx={index}")
                     self._last_cache_log_index = index
                 return img
 
@@ -149,11 +149,14 @@ class LazyVideoFrameCollection:
         compressed_frame = self._load_from_compressed_cache(index)
         if compressed_frame:
             if self._last_cache_log_index != index:
-                self._log(f"Frame {index} retrieved from compressed cache")
+                self._log(f"cache: hit jpeg idx={index}")
                 self._last_cache_log_index = index
             return compressed_frame
 
         # Decode GOP containing this frame if not cached
+        if self._last_cache_log_index != index:
+            self._log(f"cache: miss idx={index}")
+            self._last_cache_log_index = index
         self._decode_gop_frames(index)
 
         # Try again after decoding
@@ -175,9 +178,21 @@ class LazyVideoFrameCollection:
         qimage.save(buffer, "JPEG", self._cache_quality)
 
         with self._lock:
-            self._compressed_cache[index] = buffer.data().data()
-            while len(self._compressed_cache) > self._cache_size:
-                self._compressed_cache.popitem(last=False)
+            # Store python-owned bytes and move to end for LRU
+            data = bytes(buffer.data())
+            self._compressed_cache[index] = data
+            self._compressed_cache.move_to_end(index)
+            self._log(f"cache: insert jpeg idx={index} sizes raw={len(self._cache)} jpeg={len(self._compressed_cache)}")
+            # Enforce a single combined budget across raw+compressed caches
+            while (len(self._compressed_cache) + len(self._cache)) > self._cache_size:
+                # Prefer evicting raw frames first
+                if self._cache:
+                    ev_idx, _ = self._cache.popitem(last=False)
+                    self._log(f"cache: evict raw idx={ev_idx} sizes raw={len(self._cache)} jpeg={len(self._compressed_cache)}")
+                else:
+                    ev_idx, _ = self._compressed_cache.popitem(last=False)
+                    self._log(f"cache: evict jpeg idx={ev_idx} sizes raw={len(self._cache)} jpeg={len(self._compressed_cache)}")
+
 
     def _load_from_compressed_cache(self, index: int) -> Optional[QImage]:
         """Load frame from compressed cache."""
@@ -196,6 +211,7 @@ class LazyVideoFrameCollection:
         with self._lock:
             self._cache.clear()
             self._compressed_cache.clear()
+        self._log("cache: clear")
         self._last_cache_log_index = None
         try:
             shutil.rmtree(self._temp_dir, ignore_errors=True)
@@ -222,6 +238,10 @@ class LazyVideoFrameCollection:
         # Optimized FFmpeg command with faster seeking and decoding
         cmd = [
             "ffmpeg",
+            "-hide_banner",
+            "-nostats",
+            "-loglevel",
+            "error",
             "-ss",
             str(timestamp),  # Seek before input for faster seeking
             "-i",
@@ -263,6 +283,7 @@ class LazyVideoFrameCollection:
                         height,
                         QImage.Format.Format_RGB888,
                     )
+                    self._log(f"decode: single ok idx={target_index} ts={timestamp:.3f}s")
                     return qimage.copy()  # Ensure data ownership
 
         except Exception as e:
@@ -272,6 +293,11 @@ class LazyVideoFrameCollection:
 
     def _get_frame_dimensions(self) -> tuple[int, int]:
         """Get frame dimensions, defaulting to 1920x1080 if unknown."""
+        # Prefer known metadata if the collection was constructed with it
+        w = getattr(self, "_width", None)
+        h = getattr(self, "_height", None)
+        if isinstance(w, int) and isinstance(h, int) and w > 0 and h > 0:
+            return w, h
         # Try to get from cached frame first
         with self._lock:
             for qimage in self._cache.values():
@@ -314,14 +340,10 @@ class LazyVideoFrameCollection:
             half_range = max_decode_frames // 2
             decode_start = max(gop_start, target_index - half_range)
             decode_end = min(gop_end, target_index + half_range)
-            self._log(
-                f"Large GOP ({gop_size} frames), decoding adjacent frames {decode_start}-{decode_end}"
-            )
+            self._log(f"decode: range clip gop={gop_size} [{decode_start}-{decode_end}]")
         else:
             decode_start, decode_end = gop_start, gop_end
-            self._log(
-                f"Decoding GOP frames {decode_start}-{decode_end} ({gop_size} frames)"
-            )
+            self._log(f"decode: range gop={gop_size} [{decode_start}-{decode_end}]")
 
         # Skip decoding if most frames are already cached
         with self._lock:
@@ -419,9 +441,7 @@ class LazyVideoFrameCollection:
                         self._log(f"Error loading frame {i}: {str(e)}")
 
             if cached_frames:
-                self._log(
-                    f"Cached frames {min(cached_frames)}-{max(cached_frames)} ({len(cached_frames)} frames)"
-                )
+                self._log(f"cache: insert raw [{min(cached_frames)}-{max(cached_frames)}] count={len(cached_frames)} sizes raw={len(self._cache)} jpeg={len(self._compressed_cache)}")
 
         except Exception as e:
             self._log(f"Exception decoding range {start_index}-{end_index}: {str(e)}")
@@ -431,13 +451,17 @@ class LazyVideoFrameCollection:
         if not (0 <= index < self.count):
             return None
 
-        timestamp = self._frame_timestamps[index]
+        timestamp = self._timestamps[index]
         temp_frame_path = os.path.join(self._temp_dir, f"frame_single_{index}.png")
 
         try:
             # Extract single frame
             cmd = [
                 "ffmpeg",
+                "-hide_banner",
+                "-nostats",
+                "-loglevel",
+                "error",
                 "-ss",
                 str(timestamp),
                 "-i",
@@ -474,7 +498,9 @@ class LazyVideoFrameCollection:
                 with self._lock:
                     self._cache[index] = qimage
                     while len(self._cache) > self._cache_size:
-                        self._cache.popitem(last=False)
+                        ev_idx, _ = self._cache.popitem(last=False)
+                        self._log(f"cache: evict raw idx={ev_idx} sizes raw={len(self._cache)} jpeg={len(self._compressed_cache)}")
+                    self._log(f"cache: insert raw idx={index} sizes raw={len(self._cache)} jpeg={len(self._compressed_cache)}")
 
                 os.remove(temp_frame_path)
                 return qimage

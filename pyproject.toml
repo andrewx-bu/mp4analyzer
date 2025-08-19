@@ -21,7 +21,7 @@ dependencies = []
 mp4analyzer = "mp4analyzer.cli:main"
 
 [project.optional-dependencies]
-gui = ["PyQt6>=6.9", "pillow>=11.3"]
+gui = ["PyQt6>=6.9", "pillow>=11.3", "psutil>=5.9"]
 dev = ["ruff>=0.12", "black>=25.1", "pytest>=8.4", "pyinstaller>=6.15", "PyQt6>=6.9", "pillow>=11.3", "psutil>=5.9"]
 
 [tool.setuptools.package-dir]

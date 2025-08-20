@@ -62,7 +62,7 @@ Examples:
 ```
 
 ### GUI Application
-Download and run the executable from GitHub [Releases](https://github.com/andrewx-bu/mp4analyzer/releases). The application will not run without FFmpeg. Works best with files < 100 MB.
+Download and run the executable from GitHub [Releases](https://github.com/andrewx-bu/mp4analyzer/releases). The application will not run without FFmpeg. Works best with files < 250 MB.
 
 ## Supported Box Types
 
